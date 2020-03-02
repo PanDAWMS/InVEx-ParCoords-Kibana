@@ -864,7 +864,7 @@ class ParallelCoordinates {
     // Bug fixes related to css
     _fix_css_in_table(id){
         d3.select('#' + id)
-            .style({'display': 'block',
+            .style({'display': 'revert',
                     'width': 'auto',
                     'overflow': 'auto'});
 

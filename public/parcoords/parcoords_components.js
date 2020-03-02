@@ -40,7 +40,7 @@ import './parallel_coordinates/css/ParallelCoordinates.css';
 //import './parallel_coordinates/css/dataTables.alphabetSearch.css';
 
 
-export class testvizComponent extends React.Component {
+export class parcoordsComponent extends React.Component {
     constructor() {
         super();
         uniqueId.enableUniqueIds(this);
@@ -59,36 +59,7 @@ export class testvizComponent extends React.Component {
 
     return (
       <div>
-
           <div id={this._id}></div>
-
-      {/*
-      <EuiBadge
-          data-test-subj="counter"
-          onClick={this.onClick}
-          onClickAriaLabel="Increase counter"
-          color="primary">
-
-      {this.props.vis.params.counter}
-
-        </EuiBadge>
-          <div className="select2-container">AAAAAAAAAAAASDASDAS!</div>
-        <br></br>
-        <table>
-          <thead><tr>
-            {visData.columns.map(col => <th id={col.id}> {col.name} </th>)}
-          </tr></thead>
-          <tbody>
-            {visData.rows.map(row =>
-              <tr>
-                {visData.columns.map(col => <td id={row.id}> {row[col.id]} </td>)}
-              </tr>)
-            }
-          </tbody>
-        </table>
-        <br></br>
-        */}
-
       </div>
     );
   }
@@ -114,6 +85,7 @@ export class testvizComponent extends React.Component {
             this.props.visData.columns.map(col => row[col.id])),
         actual_data = data.map(row => {return [row[0], row.filter((x,i) => i > 0)]});
 
+    console.log(this);
 
      this._coords = new ParallelCoordinates(this._id,
         dims,

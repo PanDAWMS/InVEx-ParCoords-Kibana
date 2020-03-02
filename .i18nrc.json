@@ -1,6 +1,6 @@
 {
   "paths": {
-    "test3": "./"
+    "invex_parcoords": "./"
   },
   "translations": [
     "translations/zh-CN.json"

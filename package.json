@@ -1,7 +1,7 @@
 {
-  "name": "test_3",
-  "version": "0.0.3",
-  "description": "ASDasdkjflsd",
+  "name": "invex_parcoords",
+  "version": "0.0.4",
+  "description": "A visualization, which contains parallel coordinates diagram with a table connected to it",
   "main": "index.js",
   "kibana": {
     "version": "7.6.1",

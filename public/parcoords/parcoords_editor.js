@@ -2,13 +2,12 @@ import React from 'react';
 
 import { EuiFieldNumber, EuiFormRow } from '@elastic/eui';
 
-export class testvizEditor extends React.Component {
+export class parcoordsEditor extends React.Component {
   onCounterChange = ev => {
     this.props.setValue('counter', parseInt(ev.target.value));
   };
 
   render() {
-
 
     return (
       <EuiFormRow label="Counter">
