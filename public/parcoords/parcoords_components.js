@@ -65,37 +65,24 @@ export class parcoordsComponent extends React.Component {
   }
 
   updatePC(){
-      let dims = this.props.visData.columns.map(col => col.name).filter((x,i) => i > 0),
-        data = this.props.visData.rows.map( row =>
-            this.props.visData.columns.map(col => row[col.id])),
-        actual_data = data.map(row => {return [row[0], row.filter((x,i) => i > 0)]});
+      let vd = this.props.visData,
+          dims = vd.columns.map(col => col.name).filter((x,i) => i > 0),
+          data = vd.rows.map( row => vd.columns.map(col => row[col.id])),
+          actual_data = data.map(row => {return [row[0], row.filter((x,i) => i > 0)]}),
+          options = this.props.vis.params.parcoords_params;
 
-      this._coords.updateData(this._id,
-        dims,
-        actual_data,
-        [],
-        [],
-        null,
-        null);
+      options.draw.first_column_name = vd.columns[0].name;
+
+      if (this._coords === null)
+          this._coords = new ParallelCoordinates(this._id, dims, actual_data, [], [], null, null, options);
+      else this._coords.updateData(this._id, dims, actual_data,
+          [], [], null, null, options);
   }
 
   componentDidMount() {
-    let dims = this.props.visData.columns.map(col => col.name).filter((x,i) => i > 0),
-        data = this.props.visData.rows.map( row =>
-            this.props.visData.columns.map(col => row[col.id])),
-        actual_data = data.map(row => {return [row[0], row.filter((x,i) => i > 0)]});
-
-    console.log(this);
-
-     this._coords = new ParallelCoordinates(this._id,
-        dims,
-        actual_data,
-        [],
-        [],
-        null,
-        null);
-
-    this.props.renderComplete();
+     this._coords = null;
+     this.updatePC();
+     this.props.renderComplete();
   }
 
   componentDidUpdate() {

@@ -1,8 +1,11 @@
 import { setup as visualizations } from '../../../../src/legacy/core_plugins/visualizations/public/np_ready/public/legacy';
-import { Schemas } from '../../../../src/legacy/ui/public/vis/editors/default/schemas';
+//import { Schemas } from '../../../../src/legacy/ui/public/vis/editors/default/schemas';
+//import { setup as visualizations } from 'core_plugins/visualizations/public/np_ready/public/legacy';
+import { Schemas } from 'ui/vis/editors/default/schemas';
 
 import { parcoordsEditor } from './parcoords_editor';
 import { parcoordsComponent } from './parcoords_components';
+import { parcoordsColoring } from './parcoords_coloring';
 
 visualizations.types.createReactVisualization({
   name: 'parcoords',
@@ -14,7 +17,26 @@ visualizations.types.createReactVisualization({
   visConfig: {
     component: parcoordsComponent,
     defaults: {
-      counter: 0,
+        parcoords_params: {
+            draw: {
+                framework: 'd3',
+                mode: 'print',
+                parts_visible: {
+                    table: true,
+                    cluster_table: true,
+                    hint: false,
+                    selector: false,
+                    table_colvis: false
+                },
+            },
+            skip: {
+                dims: {
+                    mode: 'none'
+                }
+            },
+            debug: false
+        },
+        clustering_id: null, // null if disabled
     },
   },
   editorConfig: {
@@ -23,6 +45,10 @@ visualizations.types.createReactVisualization({
         name: 'options',
         title: 'Options',
         editor: parcoordsEditor,
+      }, {
+        name: 'coloring',
+        title: 'Coloring',
+        editor: parcoordsColoring,
       },
     ],
 
@@ -31,14 +57,16 @@ visualizations.types.createReactVisualization({
             group: 'metrics',
             name: 'metric',
             title: 'Metric',
-            min: 1,
+            min: 2,
             defaults: [
-            { type: 'max', schema: 'metric' }
+                { type: 'max', schema: 'metric' },
+                { type: 'max', schema: 'metric' }
             ]
         },{
             group: 'buckets',
             name: 'segment',
-            title: 'Bucket Split'
+            title: 'Bucket Split',
+            min: 1
         }
      ]),
   },

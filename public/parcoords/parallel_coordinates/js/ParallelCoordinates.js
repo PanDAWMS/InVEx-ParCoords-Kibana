@@ -125,8 +125,15 @@ class ParallelCoordinates {
                 !this.options.hasOwnProperty('draw'))) {
             options.draw = {
                 framework: "d3",    // Possible values: 'd3'. todo: remove 'plotly' back
-                mode: "print"       // Possible values: 'print', 'cluster'
-                //, cluster_tab_name: "Clusters"    // Custom name for 'clusters' tab in the table
+                mode: "print",       // Possible values: 'print', 'cluster'
+                //, first_column_name: "Clusters"    // Custom name for 'clusters' tab in the table
+                parts_visible: {
+                    table: true,
+                    cluster_table: true,
+                    hint: true,
+                    selector: true,
+                    table_colvis: true
+                }
             };
 
             this.options = options;
@@ -137,6 +144,8 @@ class ParallelCoordinates {
         // Throw an error if a wrong draw mode selected
         if (!["print", "cluster"].includes(this.options.draw['mode'])) 
             throw "Wrong mode value! Possible values: 'print', 'cluster', got: '"+ value + "'";
+
+        ////// todo: options.draw.parts_visible checks
             
         // If options does not have 'skip' option, make default one
         // Default is to show 6 first lanes
@@ -149,6 +158,8 @@ class ParallelCoordinates {
                 }
             };
         else if (options.hasOwnProperty('skip')) this.options.skip = options.skip;
+
+        // todo: options.skip checks
 
         // Check debug settings
         if (options.hasOwnProperty('debug')) this._debug = options.debug;
@@ -166,18 +177,19 @@ class ParallelCoordinates {
     _prepareGraphAndTables() {
         // A link to this ParCoord object
         var _PCobject = this;
-        console.log(this);
+
         // Clear the whole div if something is there
         $("#" + this.element_id).empty();
 
         // A selectBox with chosen features
-        d3.select("#" + this.element_id)
-            .append('p')
-                .text('Select the features displayed on the Parallel Coordinates graph:')
+        if (this.options.draw.parts_visible.selector)
+            d3.select("#" + this.element_id)
+                .append('p')
+                    .text('Select the features displayed on the Parallel Coordinates graph:')
 
-                .append('select')
-                    .attr({'class': 'select',
-                            'id': 's' + this.element_id});
+                    .append('select')
+                        .attr({'class': 'select',
+                                'id': 's' + this.element_id});
 
         // Construct the list with dimentions on graph
         this._graph_features = this._features.filter((elem, i) => {
@@ -188,19 +200,23 @@ class ParallelCoordinates {
         });
 
         // Options for selectBox
-        this._selectBox = $('#s' + this.element_id).select2({
-            closeOnSelect: false,
-            data: this._features.map((d, i) => { return { id: d, text: d, selected: this._graph_features.includes(d) }; }),
-            multiple: true,
-			width: 'auto'
-        })
+        if (this.options.draw.parts_visible.selector) {
+            this._selectBox = $('#s' + this.element_id).select2({
+                closeOnSelect: false,
+                data: this._features.map((d, i) => {
+                    return {id: d, text: d, selected: this._graph_features.includes(d)};
+                }),
+                multiple: true,
+                width: 'auto'
+            })
             // If the list changes - redraw the graph
-            .on("change.select2", () => {
-                this._graph_features = $('#s' + this.element_id).val();
-                this._createGraph();
-            });
-        
-        this._selectBox.data('select2').$container.css("display", "block");
+                .on("change.select2", () => {
+                    this._graph_features = $('#s' + this.element_id).val();
+                    this._createGraph();
+                });
+
+            this._selectBox.data('select2').$container.css("display", "block");
+        }
 
         // Append an SVG to draw lines on
         let container = d3.select("#" + this.element_id)
@@ -219,32 +235,33 @@ class ParallelCoordinates {
                 .style("overflow", "auto");
 
         // A hint on how to use
-        //d3.select("#" + this.element_id)
-        svg_container
-            .append('p')
-            .html('Use the Left Mouse Button to select a curve and the corresponding line in the table <br>' +
-                'Hover over the lines with mouse to see the row in the table');
+        if (this.options.draw.parts_visible.hint)
+            svg_container
+                .append('p')
+                .html('Use the Left Mouse Button to select a curve and the corresponding line in the table <br>' +
+                    'Hover over the lines with mouse to see the row in the table');
 
         // Currently selected line id
         this._selected_line = -1;
 
         // Add the table below the ParCoords
-        //d3.select("#" + this.element_id)
-        container
-            .append("div")
-                .attr("id", "t" + this.element_id + "_wrapper")
-                .style({"overflow": "auto",
-				        "min-width": "500px",
-				        "max-width": "max-content",
-				        'flex': '1'});
+        if (this.options.draw.parts_visible.table)
+            container
+                .append("div")
+                    .attr("id", "t" + this.element_id + "_wrapper")
+                    .style({"overflow": "auto",
+                            "min-width": "500px",
+                            "max-width": "max-content",
+                            'flex': '1'});
 
         // Draw the graph and the table
         this._createGraph();
-        this._createTable();
+        if (this.options.draw.parts_visible.table) this._createTable();
 
-        if(this.options.draw['mode'] === 'cluster'){
-            this._ci_div = d3.select("#" + this.element_id).append('div');
-            this._createClusterInfo();
+        if(this.options.draw['mode'] === 'cluster' &&
+            this.options.draw.parts_visible.cluster_table){
+                this._ci_div = container.append('div');
+                this._createClusterInfo();
         }
 
         // trash bin :)
@@ -275,7 +292,8 @@ class ParallelCoordinates {
 
         // Sizes of the graph
         this._margin = { top: 30, right: 10, bottom: 10, left: 10 };
-        this._width = (this._graph_features.length > 7 ? 80 * this._graph_features.length : 600) - this._margin.left - this._margin.right;
+        this._width = (this._graph_features.length > 7 ? 80 * this._graph_features.length : 600) -
+            this._margin.left - this._margin.right;
         this._height = 500 - this._margin.top - this._margin.bottom;
 
         // Change the SVG size to draw lines on
@@ -349,11 +367,12 @@ class ParallelCoordinates {
                 $(this).addClass("bold");
                 d3.select(this).moveToFront();
 
-                let row = _PCobject._datatable.row((idx, data) => data[0] === _PCobject._parcoordsToTable(i));
+                if (_PCobject.options.draw.parts_visible.table) {
+                    let row = _PCobject._datatable.row((idx, data) => data[0] === _PCobject._parcoordsToTable(i));
 
-                row.show().draw(false);
-                _PCobject._datatable.rows(row).nodes().to$().addClass('table-selected-line');
-
+                    row.show().draw(false);
+                    _PCobject._datatable.rows(row).nodes().to$().addClass('table-selected-line');
+                }
                 // In case of debug enabled
                 // Write time to complete the search, average time, minimum and maximum
                 if (_PCobject._debug)
@@ -383,8 +402,10 @@ class ParallelCoordinates {
 
                 $(this).removeClass("bold");
 
-                let row = _PCobject._datatable.row((idx, data) => data[0] === _PCobject._parcoordsToTable(i));
-                _PCobject._datatable.rows(row).nodes().to$().removeClass('table-selected-line');
+                if (_PCobject.options.draw.parts_visible.table) {
+                    let row = _PCobject._datatable.row((idx, data) => data[0] === _PCobject._parcoordsToTable(i));
+                    _PCobject._datatable.rows(row).nodes().to$().removeClass('table-selected-line');
+                }
             })
 
             // Mouse click selects and deselects the line
@@ -395,10 +416,12 @@ class ParallelCoordinates {
                     $(this).addClass("bold");
                     d3.select(this).moveToFront();
 
-                    let row = _PCobject._datatable.row((idx, data) => data[0] === _PCobject._parcoordsToTable(i));
+                    if (_PCobject.options.draw.parts_visible.table) {
+                        let row = _PCobject._datatable.row((idx, data) => data[0] === _PCobject._parcoordsToTable(i));
 
-                    row.show().draw(false);
-                    _PCobject._datatable.rows(row).nodes().to$().addClass('table-selected-line');
+                        row.show().draw(false);
+                        _PCobject._datatable.rows(row).nodes().to$().addClass('table-selected-line');
+                    }
                 }
                 else if (_PCobject._selected_line === i) _PCobject._selected_line = -1;
             });
@@ -481,11 +504,10 @@ class ParallelCoordinates {
 
         // Array with headers
         this._theader_array = this._features.slice();
-        if (this.options.draw['mode'] === "cluster")
-            if (this.options.draw.hasOwnProperty('cluster_tab_name'))
-                this._theader_array.unshift(this.options.draw['cluster_tab_name']);
-            else this._theader_array.unshift('Cluster');
-        this._theader_array.unshift('ID');
+        if (this.options.draw.hasOwnProperty('first_column_name'))
+            this._theader_array.unshift(this.options.draw['first_column_name']);
+        else if (this.options.draw['mode'] === "cluster") this._theader_array.unshift('Cluster');
+            else this._theader_array.unshift('ID');
         if (this._aux_features !== null) this._theader_array = this._theader_array.concat(this._aux_features);
 
         // Map headers for the tables
@@ -522,7 +544,7 @@ class ParallelCoordinates {
             mark: true,
             dom: 'Blfrtip',
             colReorder: true,
-            buttons: ['colvis'],
+            buttons: (this.options.draw.parts_visible.table_colvis)?['colvis']:[],
             "search": {"regex": true},
 
             // Make colors lighter for readability
@@ -785,7 +807,7 @@ class ParallelCoordinates {
             mark: true,
             dom: 'Alfrtip',
             colReorder: true,
-            buttons: ['colvis'],
+            buttons: (this.options.draw.parts_visible.table)?['colvis']:[],
             "search": {"regex": true}
         });
 
