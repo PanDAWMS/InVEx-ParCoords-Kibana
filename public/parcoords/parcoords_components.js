@@ -56,7 +56,7 @@ export class parcoordsComponent extends React.Component {
         this._id = "ParallelCoordinatesGraph-" + this.nextUniqueId();
 
         return (
-            <div>
+            <div style={{width: "100%"}}>
                 <div id={this._id}></div>
             </div>
         );

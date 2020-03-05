@@ -244,7 +244,9 @@ class ParallelCoordinates {
 				        'flex-wrap': 'wrap'}),
             svg_container = container.append("div")
                 .style({'width': 'auto',
-                        'flex': '0'});
+                        'flex': '0',
+                        'margin-right': '20px',
+                        'margin-bottom': '20px'});
 
         this._graph = svg_container
             .append("svg")
@@ -276,7 +278,8 @@ class ParallelCoordinates {
 
         if(this.options.draw['mode'] === 'cluster' &&
             this.options.draw.parts_visible.cluster_table){
-                this._ci_div = container.append('div');
+                this._ci_div = container.append('div')
+                    .style({"flex-basis": "100%"});
                 this._createClusterInfo();
         }
 
@@ -313,8 +316,9 @@ class ParallelCoordinates {
         this._height = 500 - this._margin.top - this._margin.bottom;
 
         // Change the SVG size to draw lines on
-        this._graph.attr("width", this._width + this._margin.left + this._margin.right)
-            .attr("height", this._height + this._margin.top + this._margin.bottom);
+        this._graph
+            .attr({"width": this._width + this._margin.left + this._margin.right,
+                "height": this._height + this._margin.top + this._margin.bottom });
 
         // Arrays for x and y data, and brush dragging
         this._x = d3.scale.ordinal().rangePoints([0, this._width], 1);
@@ -736,6 +740,7 @@ class ParallelCoordinates {
                         // Add 'Cluster # statistics' text
                         this._ci_table_div
                             .append('h3')
+                                .style({'margin-bottom': '10px'})
                                 .text("Cluster " + d3.event.target.innerText + " statistics");
 
                         // Print the stats
@@ -818,6 +823,7 @@ class ParallelCoordinates {
         // Add 'Number of elements: N' text
         this._ci_table_div
             .append('h5')
+            .style({'margin-bottom': '8px'})
             .text('Number of elements: ' + this._ci_cluster_data.length);
 
         // Create the table
