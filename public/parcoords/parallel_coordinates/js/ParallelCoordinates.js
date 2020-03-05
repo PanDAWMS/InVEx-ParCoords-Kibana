@@ -1,40 +1,3 @@
-// This function allows to jump to a certain row in a DataTable
-$.fn.dataTable.Api.register('row().show()', function () {
-    let page_info = this.table().page.info(),
-    // Get row index
-        new_row_index = this.index(),
-    // Row position
-        row_position = this.table().rows()[0].indexOf(new_row_index);
-    // Already on right page ?
-    if (row_position >= page_info.start && row_position < page_info.end) {
-        // Return row object
-        return this;
-    }
-    // Find page number
-    let page_to_display = Math.floor(row_position / this.table().page.len());
-    // Go to that page
-    this.table().page(page_to_display);
-    // Return row object
-    return this;
-});
-
-// This is used to manipulate d3 objects
-// e.g., to move a line on a graph to the front
-// https://github.com/wbkd/d3-extended
-d3.selection.prototype.moveToFront = function () {
-    return this.each(function () {
-        this.parentNode.appendChild(this);
-    });
-};
-d3.selection.prototype.moveToBack = function () {
-    return this.each(function () {
-        let firstChild = this.parentNode.firstChild;
-        if (firstChild) {
-            this.parentNode.insertBefore(this, firstChild);
-        }
-    });
-};
-
 // Add spaces and a dot to the number
 // '1234567.1234 -> 1 234 567.12'
 function numberWithSpaces(x) {
@@ -49,14 +12,7 @@ function rgbToHex(color) {
       + color.b * 255).toString(16).slice(1);
 }
 
-// Ability to count a number of a certain element in an array
-Object.defineProperties(Array.prototype, {
-    count: {
-        value: function(value) {
-            return this.filter(x => x==value).length;
-        }
-    }
-});
+
 
 class ParallelCoordinates {
     // ********
@@ -68,6 +24,57 @@ class ParallelCoordinates {
         aux_features, aux_data_array, options = {}) {
         // Save the time for debug purposes
         this._timeStart =  Date.now();
+
+
+        // This function allows to jump to a certain row in a DataTable
+        $.fn.dataTable.Api.register('row().show()', function () {
+            let page_info = this.table().page.info(),
+            // Get row index
+                new_row_index = this.index(),
+            // Row position
+                row_position = this.table().rows()[0].indexOf(new_row_index);
+            // Already on right page ?
+            if (row_position >= page_info.start && row_position < page_info.end) {
+                // Return row object
+                return this;
+            }
+            // Find page number
+            let page_to_display = Math.floor(row_position / this.table().page.len());
+            // Go to that page
+            this.table().page(page_to_display);
+            // Return row object
+            return this;
+        });
+
+
+        // This is used to manipulate d3 objects
+        // e.g., to move a line on a graph to the front
+        // https://github.com/wbkd/d3-extended
+        d3.selection.prototype.moveToFront = function () {
+            return this.each(function () {
+                this.parentNode.appendChild(this);
+            });
+        };
+        d3.selection.prototype.moveToBack = function () {
+            return this.each(function () {
+                let firstChild = this.parentNode.firstChild;
+                if (firstChild) {
+                    this.parentNode.insertBefore(this, firstChild);
+                }
+            });
+        };
+
+
+        // Ability to count a number of a certain element in an array
+        if (!Array.prototype.hasOwnProperty('count'))
+            Object.defineProperties(Array.prototype, {
+                count: {
+                    value: function (value) {
+                        return this.filter(x => x == value).length;
+                    }
+                }
+            });
+
 
         // Update data and draw the graph
         if (arguments.length > 0) 
@@ -116,9 +123,6 @@ class ParallelCoordinates {
         this._search_time_min = -1;
         this._search_time_max = -1;
 
-        // Arrays with (line id)<->(id in realData)
-        this._ids = this._data.map((row) => row[0]);
-
         // If options does not have 'draw' option, make default one
         if (!options.hasOwnProperty('draw') &&
             (typeof this.options === 'undefined' ||
@@ -165,6 +169,16 @@ class ParallelCoordinates {
         if (options.hasOwnProperty('debug')) this._debug = options.debug;
             else if (!this.hasOwnProperty('_debug')) this._debug = false;
 
+        // Arrays with (line id)<->(id in _data)
+        if (this.options.draw.parts_visible.table)
+            this._ids = this._data.map((row, i) =>
+                [row[0]]
+                    .concat((this.options.draw['mode'] === "cluster") ? [this._color[i]] : [])
+                    .concat(row[1].map(String))
+                    .concat((this._aux_data !== null)?this._aux_data[i][1].map(String):[])
+                    .concat((this.options.draw['mode'] === "cluster") ?
+                        [rgbToHex(this._clusters_color_scheme[this._color[i]])] : []));
+
         // Initiate the arrays and draw the stuff
         this._prepareGraphAndTables();
 
@@ -172,6 +186,8 @@ class ParallelCoordinates {
         if (this._debug)
             console.log("Parallel Coordinates updated in %ims (%ims from creation)",
                 Date.now() - this._timeUpdate, Date.now() - this._timeStart);
+
+        // console.log(this);
     }
     
     _prepareGraphAndTables() {
@@ -327,9 +343,9 @@ class ParallelCoordinates {
 
         // Array to make brushes
         this._line_data = [];
-        for (var i = 0; i < this._values[0].length; i++) {
+        for (let i = 0; i < this._values[0].length; i++) {
             let tmp = {};
-            for (var j = 0; j < this._values.length; j++) tmp[this._graph_features[j]] = this._values[j][i];
+            for (let j = 0; j < this._values.length; j++) tmp[this._graph_features[j]] = this._values[j][i];
             this._line_data.push(tmp);
         }
 
@@ -368,7 +384,7 @@ class ParallelCoordinates {
                 d3.select(this).moveToFront();
 
                 if (_PCobject.options.draw.parts_visible.table) {
-                    let row = _PCobject._datatable.row((idx, data) => data[0] === _PCobject._parcoordsToTable(i));
+                    let row = _PCobject._datatable.row((idx, data) => data === _PCobject._parcoordsToTable(i));
 
                     row.show().draw(false);
                     _PCobject._datatable.rows(row).nodes().to$().addClass('table-selected-line');
@@ -403,7 +419,7 @@ class ParallelCoordinates {
                 $(this).removeClass("bold");
 
                 if (_PCobject.options.draw.parts_visible.table) {
-                    let row = _PCobject._datatable.row((idx, data) => data[0] === _PCobject._parcoordsToTable(i));
+                    let row = _PCobject._datatable.row((idx, data) => data === _PCobject._parcoordsToTable(i));
                     _PCobject._datatable.rows(row).nodes().to$().removeClass('table-selected-line');
                 }
             })
@@ -417,7 +433,7 @@ class ParallelCoordinates {
                     d3.select(this).moveToFront();
 
                     if (_PCobject.options.draw.parts_visible.table) {
-                        let row = _PCobject._datatable.row((idx, data) => data[0] === _PCobject._parcoordsToTable(i));
+                        let row = _PCobject._datatable.row((idx, data) => data === _PCobject._parcoordsToTable(i));
 
                         row.show().draw(false);
                         _PCobject._datatable.rows(row).nodes().to$().addClass('table-selected-line');
@@ -500,15 +516,19 @@ class ParallelCoordinates {
         this._visible = ["all"];
 
         // Initialize a search result with all objects visible
-        this._search_results = this._data.map((x) => x[0]);
+        this._search_results = this._ids.map(x => x.slice(0, -1));
 
         // Array with headers
         this._theader_array = this._features.slice();
+
+        if (this.options.draw['mode'] === "cluster") this._theader_array.unshift('Cluster');
+
         if (this.options.draw.hasOwnProperty('first_column_name'))
             this._theader_array.unshift(this.options.draw['first_column_name']);
-        else if (this.options.draw['mode'] === "cluster") this._theader_array.unshift('Cluster');
-            else this._theader_array.unshift('ID');
-        if (this._aux_features !== null) this._theader_array = this._theader_array.concat(this._aux_features);
+        else this._theader_array.unshift('ID');
+
+        if (this._aux_features !== null)
+            this._theader_array = this._theader_array.concat(this._aux_features);
 
         // Map headers for the tables
         this._theader = this._theader_array.map(row => {
@@ -525,20 +545,20 @@ class ParallelCoordinates {
             };
         });
 
-        // Array with table cell data
-        this._tcells = this._data.map((row, i) =>
+        /*// Array with table cell data
+        //this._tcells = this._ids/*;_data.map((row, i) =>
             [row[0]]
                 .concat((this.options.draw['mode'] === "cluster") ? [this._color[i]] : [])
                 .concat(row[1].map(String))
                 .concat((this._aux_data !== null)?this._aux_data[i][1].map(String):[])
                 .concat((this.options.draw['mode'] === "cluster") ?
                     [rgbToHex(this._clusters_color_scheme[this._color[i]])] : [])
-        );
+        //);*/
 
         // Vars for table and its datatable
         this._table = $('#t' + this.element_id);
         this._datatable = this._table.DataTable({
-            data: this._tcells,
+            data: this._ids,
             columns: this._theader,
 
             mark: true,
@@ -568,7 +588,7 @@ class ParallelCoordinates {
             .on("mouseover", 'tr', function (d, i) {
                 if (_PCobject._selected_line !== -1) return;
 
-                let line = _PCobject._foreground[0][_PCobject._tableToParcoords(_PCobject._datatable.row(this).data()[0])];
+                let line = _PCobject._foreground[0][_PCobject._tableToParcoords(_PCobject._datatable.row(this).data())];
                 $(line).addClass("bold");
                 d3.select(line).moveToFront();
 
@@ -581,14 +601,14 @@ class ParallelCoordinates {
                 $(_PCobject._datatable.rows().nodes()).removeClass('table-selected-line');
 
                 $(_PCobject._foreground[0][
-                    _PCobject._tableToParcoords(_PCobject._datatable.row(this).data()[0])
+                    _PCobject._tableToParcoords(_PCobject._datatable.row(this).data())
                 ]).removeClass("bold");
             })
 
             // If the line is clicked, make it 'selected'. Remove this status on one more click.
             .on("click", 'tr', function (d, i) {
                 if (_PCobject._selected_line === -1) {
-                    _PCobject._selected_line = _PCobject._tableToParcoords(_PCobject._datatable.row(this).data()[0]);
+                    _PCobject._selected_line = _PCobject._tableToParcoords(_PCobject._datatable.row(this).data());
 
                     let line = _PCobject._foreground[0][_PCobject._selected_line];
                     $(line).addClass("bold");
@@ -596,7 +616,7 @@ class ParallelCoordinates {
 
                     _PCobject._datatable.rows(this).nodes().to$().addClass('table-selected-line');
                 }
-                else if (_PCobject._selected_line === _PCobject._tableToParcoords(_PCobject._datatable.row(this).data()[0])) {
+                else if (_PCobject._selected_line === _PCobject._tableToParcoords(_PCobject._datatable.row(this).data())) {
                     let line = _PCobject._foreground[0][_PCobject._selected_line];
                     $(line).removeClass("bold");
 
@@ -632,8 +652,8 @@ class ParallelCoordinates {
 
                 if (counter === 0) _PCobject._search_results = [];
 
-                if (_PCobject._visible[0] === "all" || _PCobject._visible.includes(data[0])) {
-                    _PCobject._search_results.push(data[0]);
+                if (_PCobject._visible[0] === "all" || _PCobject._visible.includes(data)) {
+                    _PCobject._search_results.push(data);
 
                     return true;
                 }
@@ -675,9 +695,9 @@ class ParallelCoordinates {
                 .data(d3.keys(this._clusters_color_scheme))
                 .enter().append('a')
                     .attr({'class': 'ci-button',
-                            'title': id => "Cluster " + id + ".\nElement count: " + cluster_count[id] + "."})
+                            'title': (id, i) => "Cluster " + id + ".\nElement count: " + cluster_count[i] + "."})
                     .style({'background': id => rgbToHex(this._clusters_color_scheme[id]),
-                            'box-shadow': id => 'inset 0px 0px 0px ' + scale(cluster_count[id]) + 'px #fff'})
+                            'box-shadow': (id, i) => 'inset 0px 0px 0px ' + scale(cluster_count[i]) + 'px #fff'})
                     .text(id => id)
                     .on("click", id => {
                         d3.event.preventDefault();
@@ -722,12 +742,12 @@ class ParallelCoordinates {
                         this._createClusterStatsTable();
                     });
 
-        $('.ci-button').tooltip({
+        /*jQuery('.ci-button').tooltip({
             track: true,
             tooltipClass: "ci-tooltip",
             show: false,
             hide: false
-        });
+        });*/
     }
 
     // Creates a table with cluster info
@@ -753,10 +773,17 @@ class ParallelCoordinates {
         // Prepare cells
         this._ci_cluster_data = this._data
             .filter((x, i) => this._color[i] === d3.event.target.innerText)
-            .map((x, i) => x[1].concat(this._aux_data[i][1]));
+            .map((x, i) =>
+                (this._aux_data !== null && this._aux_data[i] !== undefined) ?
+                    x[1].concat(this._aux_data[i][1]) :
+                    x[1]
+            );
 
-        this._ci_cells = this._features.concat(this._aux_features).map((x, i) =>
-            (this._features.includes(x)) ?
+        let features = this._features;
+        if(this._aux_features !== null) features = features.concat(this._aux_features);
+
+        this._ci_cells = features.map((x, i) =>
+            (features.includes(x)) ?
             [
                 x,
                 d3.min(this._ci_cluster_data, row => row[i]),
@@ -765,8 +792,6 @@ class ParallelCoordinates {
                 d3.median(this._ci_cluster_data, row => row[i]),
                 (this._ci_cluster_data.length > 1) ? d3.deviation(this._ci_cluster_data, row => row[i]) : '-'
             ] : [x + ' <i>(click to expand)</i>', '-','-','-','-','-']);
-
-
 
         /*
         this._ci_stats = this._features.map((f, i) =>
@@ -780,7 +805,7 @@ class ParallelCoordinates {
         });
          */
 
-        this._ci_aux_stats = this._aux_features.map((f, i) =>
+        this._ci_aux_stats = (this._aux_features !== null) ? this._aux_features.map((f, i) =>
         {
             let values = this._aux_data
                     .filter((x, j) => this._color[j] === d3.event.target.innerText)
@@ -788,7 +813,7 @@ class ParallelCoordinates {
                 stat = [...new Set(values)].map((x)=>[x, values.count(x)]);
 
             return [f, stat];
-        });
+        }) : [];
 
         // Add 'Number of elements: N' text
         this._ci_table_div
@@ -829,7 +854,8 @@ class ParallelCoordinates {
                     row = table.row( tr ),
                     text = '<table class="ci_aux_table" style="width:min-content">';
 
-                for(let i = 0; i<_PCobject._ci_aux_stats[id][1].length; i++)
+                for(let i = 0; _PCobject._ci_aux_stats !== [] &&
+                                i<_PCobject._ci_aux_stats[id][1].length; i++)
                     text += '<tr><td>' +
                         _PCobject._ci_aux_stats[id][1][i][0] + '</td><td> ' +
                         _PCobject._ci_aux_stats[id][1][i][1] +
@@ -879,7 +905,14 @@ class ParallelCoordinates {
         object._foreground.style("display", function (d, j) {
             let isVisible = object._visible[0] === "all" || object._visible.includes(object._parcoordsToTable(j));
 
-            return isVisible && object._search_results.includes(object._parcoordsToTable(j)) ? null : "none";
+            return isVisible &&
+                object._search_results
+                    .some(x => x
+                        .every((y, i) =>
+                            y === ((object.options.draw['mode'] === "cluster") ?
+                                object._ids[j].slice(0, -1) :
+                                object._ids[j])[i]))
+                ? null : "none";
         });
     }
 
@@ -941,7 +974,7 @@ class ParallelCoordinates {
                 return extents[i][0] <= d[p] && d[p] <= extents[i][1];
             });
             
-            if (isVisible) visible.push(object._data[j][0]);
+            if (isVisible) visible.push(object._ids[j]);
         });
 
         object._visible = visible;

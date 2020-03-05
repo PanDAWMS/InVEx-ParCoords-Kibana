@@ -20,8 +20,16 @@ export class parcoordsEditor extends React.Component {
         this.onToggleChange = (e, component) => {
             let _pc = this.props.stateParams.parcoords_params;
 
-            if (component == 'debug') _pc.debug = !_pc.debug;
-            else _pc.draw.parts_visible[component] = !_pc.draw.parts_visible[component];
+            switch (component) {
+                case 'colors':
+                    this.props.setValue('colors', !this.props.stateParams.colors);
+                    return;
+                case 'debug':
+                    _pc.debug = !_pc.debug;
+                    break;
+                default:
+                    _pc.draw.parts_visible[component] = !_pc.draw.parts_visible[component]
+            }
 
             this.props.setValue('parcoords_params', _pc);
 
@@ -35,7 +43,7 @@ export class parcoordsEditor extends React.Component {
                     <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
                         <EuiFlexItem grow={false}>
                             <EuiTitle size="xs">
-                                <h3>Hide graph parts</h3>
+                                <h3>Graph parts visibility</h3>
                             </EuiTitle>
                         </EuiFlexItem>
 
@@ -50,7 +58,7 @@ export class parcoordsEditor extends React.Component {
                     <EuiSpacer/>
 
                     <EuiButtonToggle
-                        label="Table"
+                        label="Table representing the data"
                         iconType={visible.table ? 'eye' : 'eyeClosed'}
                         onChange={(e) => this.onToggleChange(e, 'table')}
                         isSelected={visible.table}
@@ -62,7 +70,7 @@ export class parcoordsEditor extends React.Component {
                     <EuiSpacer size="m"/>
 
                     <EuiButtonToggle
-                        label="Hint"
+                        label="Hint under the graph"
                         iconType={visible.hint ? 'eye' : 'eyeClosed'}
                         onChange={(e) => this.onToggleChange(e, 'hint')}
                         isSelected={visible.hint}
@@ -86,10 +94,22 @@ export class parcoordsEditor extends React.Component {
                     <EuiSpacer size="m"/>
 
                     <EuiButtonToggle
-                        label="Table controls"
+                        label="Table advanced controls"
                         iconType={visible.table_colvis ? 'eye' : 'eyeClosed'}
                         onChange={(e) => this.onToggleChange(e, 'table_colvis')}
                         isSelected={visible.table_colvis}
+                        size="s"
+                        isEmpty
+                        //isIconOnly
+                    />
+
+                    <EuiSpacer size="m"/>
+
+                    <EuiButtonToggle
+                        label="Cluster information"
+                        iconType={visible.cluster_table ? 'eye' : 'eyeClosed'}
+                        onChange={(e) => this.onToggleChange(e, 'cluster_table')}
+                        isSelected={visible.cluster_table}
                         size="s"
                         isEmpty
                         //isIconOnly
@@ -101,6 +121,21 @@ export class parcoordsEditor extends React.Component {
                 <EuiSpacer size="s"/>
 
                 <EuiPanel>
+                    <EuiTitle size="xs">
+                        <h3>Additional settings</h3>
+                    </EuiTitle>
+
+                    <EuiSpacer size="s"/>
+
+                    <EuiCheckbox
+                        id={"ColorCheckbox"}
+                        label="Use second column as a color grade"
+                        checked={this.props.stateParams.colors}
+                        onChange={(e) => this.onToggleChange(e, 'colors')}
+                    />
+
+                    <EuiSpacer size="xs"/>
+
                     <EuiCheckbox
                         id={"DebugCheckbox"}
                         label="Debug console output"
