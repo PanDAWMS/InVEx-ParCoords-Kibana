@@ -170,14 +170,17 @@ class ParallelCoordinates {
             else if (!this.hasOwnProperty('_debug')) this._debug = false;
 
         // Arrays with (line id)<->(id in _data)
+        this._cells = this._data.map((row, i) =>
+            [row[0]]
+                .concat((this.options.draw['mode'] === "cluster") ? [this._color[i]] : [])
+                .concat(row[1].map(String))
+                .concat((this._aux_data !== null) ? this._aux_data[i][1].map(String) : [])
+                .concat((this.options.draw['mode'] === "cluster") ?
+                    [rgbToHex(this._clusters_color_scheme[this._color[i]])] : []));
+
         if (this.options.draw.parts_visible.table)
-            this._ids = this._data.map((row, i) =>
-                [row[0]]
-                    .concat((this.options.draw['mode'] === "cluster") ? [this._color[i]] : [])
-                    .concat(row[1].map(String))
-                    .concat((this._aux_data !== null)?this._aux_data[i][1].map(String):[])
-                    .concat((this.options.draw['mode'] === "cluster") ?
-                        [rgbToHex(this._clusters_color_scheme[this._color[i]])] : []));
+            this._ids = this._cells.map(x =>
+                (this.options.draw['mode'] === "cluster") ? x.slice(0, -1) : x);
 
         // Initiate the arrays and draw the stuff
         this._prepareGraphAndTables();
@@ -516,11 +519,10 @@ class ParallelCoordinates {
                         "class": "table hover"});
 
         // 'visible' data array with lines on foreground (not filtered by a brush)
-        //  possible values: ["all"] or ["id in _data", ...]
-        this._visible = ["all"];
+        this._visible = this._ids;
 
         // Initialize a search result with all objects visible
-        this._search_results = this._ids.map(x => x.slice(0, -1));
+        this._search_results = this._ids;
 
         // Array with headers
         this._theader_array = this._features.slice();
@@ -562,7 +564,7 @@ class ParallelCoordinates {
         // Vars for table and its datatable
         this._table = $('#t' + this.element_id);
         this._datatable = this._table.DataTable({
-            data: this._ids,
+            data: this._cells,
             columns: this._theader,
 
             mark: true,
@@ -592,7 +594,8 @@ class ParallelCoordinates {
             .on("mouseover", 'tr', function (d, i) {
                 if (_PCobject._selected_line !== -1) return;
 
-                let line = _PCobject._foreground[0][_PCobject._tableToParcoords(_PCobject._datatable.row(this).data())];
+                let line = _PCobject._foreground[0][_PCobject._tableToParcoords(
+                    _PCobject._datatable.row(this).data())];
                 $(line).addClass("bold");
                 d3.select(line).moveToFront();
 
@@ -656,7 +659,10 @@ class ParallelCoordinates {
 
                 if (counter === 0) _PCobject._search_results = [];
 
-                if (_PCobject._visible[0] === "all" || _PCobject._visible.includes(data)) {
+                if (_PCobject._visible
+                        .some(x => x
+                            .every((y, i) =>
+                                y === data[i]))) {
                     _PCobject._search_results.push(data);
 
                     return true;
@@ -903,21 +909,16 @@ class ParallelCoordinates {
     }
 
     // Functions to perform id transformation
-    _tableToParcoords(index) { return this._ids.indexOf(index); }
-    _parcoordsToTable(index) { return this._ids[index]; }
+    _tableToParcoords(object) { return this._cells.findIndex(x => object.every((y, i) => y === x[i])); }
+    _parcoordsToTable(index) { return this._cells[index]; }
 
     // Callback to change the lines visibility after 'draw()' completed
     _on_table_ready(object) {
         object._foreground.style("display", function (d, j) {
-            let isVisible = object._visible[0] === "all" || object._visible.includes(object._parcoordsToTable(j));
-
-            return isVisible &&
-                object._search_results
+            return object._search_results
                     .some(x => x
                         .every((y, i) =>
-                            y === ((object.options.draw['mode'] === "cluster") ?
-                                object._ids[j].slice(0, -1) :
-                                object._ids[j])[i]))
+                            y === object._ids[j][i]))
                 ? null : "none";
         });
     }
@@ -974,7 +975,7 @@ class ParallelCoordinates {
             extents = actives.map(function (p) { return object._y[p].brush.extent(); }),
             visible = [];
 
-        if (actives.length === 0) visible.push("all");
+        if (actives.length === 0) visible = object._ids;
         else object._foreground.each(function (d, j) {
             let isVisible = actives.every(function (p, i) {
                 return extents[i][0] <= d[p] && d[p] <= extents[i][1];
