@@ -326,6 +326,8 @@ class ParallelCoordinates {
         // Arrays for x and y data, and brush dragging
         this._x = d3.scale.ordinal().rangePoints([0, this._width], 1);
         this._y = {};
+        this._dim_types = {};
+        this._ranges = {};
         this._dragging = {};
         this._values = [];
 
@@ -341,9 +343,19 @@ class ParallelCoordinates {
         this._x.domain(this._graph_features.map((dim, index, arr) => {
             this._values.push(this._data.map((row) => row[1][this._features.indexOf(dim)]));
 
-            this._y[dim] = d3.scale.linear()
-                .domain([Math.min(...this._values[index]), Math.max(...this._values[index])])
-                .range([this._height, 0]);
+            if (this._values[index].every(x => !isNaN(x))) {
+                this._y[dim] = d3.scale.linear()
+                    .domain([Math.min(...this._values[index]), Math.max(...this._values[index])])
+                    .range([this._height, 0]);
+                this._dim_types[dim] = "linear";
+            }
+            else {
+                this._y[dim] = d3.scale.ordinal()
+                    .domain(this._values[index])
+                    .rangePoints([this._height, 0]);
+                this._dim_types[dim] = "ordinal";
+                this._ranges[dim] = this._y[dim].domain().map(this._y[dim]);
+            }
 
             return dim;
         }));
@@ -978,7 +990,13 @@ class ParallelCoordinates {
         if (actives.length === 0) visible = object._ids;
         else object._foreground.each(function (d, j) {
             let isVisible = actives.every(function (p, i) {
-                return extents[i][0] <= d[p] && d[p] <= extents[i][1];
+                let value = null;
+
+                if (object._dim_types[p] === "ordinal")
+                    value = object._ranges[p][object._y[p].domain().findIndex(x => x === d[p])];
+                else value = d[p];
+
+                return extents[i][0] <= value && value <= extents[i][1];
             });
             
             if (isVisible) visible.push(object._ids[j]);

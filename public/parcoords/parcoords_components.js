@@ -64,10 +64,10 @@ export class parcoordsComponent extends React.Component {
 
     updatePC() {
         let vd = this.props.visData,
-            dims = vd.columns.map(col => col.name).filter((x, i) => i > 0),
+            dims = vd.columns.map(col => col.name),//.filter((x, i) => i > 0),
             data = vd.rows.map(row => vd.columns.map(col => row[col.id])),
             actual_data = data.map(row => {
-                return [row[0], row.filter((x, i) => i > 0)
+                return [row[0], row//.filter((x, i) => i > 0)
                     .map(y => (y === null) ? 0 : y)]
             }),
             options = this.props.vis.params.parcoords_params,
@@ -78,7 +78,7 @@ export class parcoordsComponent extends React.Component {
 
         if (this.props.vis.params.colors)
         {
-            colors = actual_data.map((x) => x[1][0]);
+            colors = actual_data.map((x) => x[1][1]);
 
             /* colors: (230, 25, 75), (60, 180, 75), (0, 130, 200),
                 (245, 130, 48), (145, 30, 180), (70, 240, 240), (240, 50, 230),
