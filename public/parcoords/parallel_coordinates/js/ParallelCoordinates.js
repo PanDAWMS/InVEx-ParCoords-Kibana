@@ -20,8 +20,7 @@ class ParallelCoordinates {
     // 
     // Passes all arguments to updateData(...)
     // ********
-    constructor(element_id, dimension_names, data_array, clusters_list, clusters_color_scheme,
-        aux_features, aux_data_array, options = {}) {
+    constructor(element_id, dimension_names, data_array, clusters_list, clusters_color_scheme, options = {}) {
         // Save the time for debug purposes
         this._timeStart =  Date.now();
 
@@ -79,8 +78,7 @@ class ParallelCoordinates {
         // Update data and draw the graph
         if (arguments.length > 0) 
         {
-            this.updateData(element_id, dimension_names, data_array, clusters_list, clusters_color_scheme,
-                aux_features, aux_data_array, options);
+            this.updateData(element_id, dimension_names, data_array, clusters_list, clusters_color_scheme, options);
 
             if (this._debug)
                 console.log("Parallel Coordinates creation finished in %ims", Date.now() - this._timeStart);
@@ -96,13 +94,12 @@ class ParallelCoordinates {
     //  data_array - array with all data about objects under consideration
     //  clusters_list - array with all clusters in those data
     //  clusters_color_scheme - array with the color scheme
-    //  aux_features - auxillary features that are not presented on the graph
-    //  aux_data_array - auxillaty data 
+    //  aux_features - auxillary features that are not presented on the graph   -- removed
+    //  aux_data_array - auxillaty data                                         -- removed
     //  options - graph options
     //
     // ********
-    updateData(element_id, feature_names, data_array, clusters_list, clusters_color_scheme,
-        aux_features, aux_data_array, options = {}) {
+    updateData(element_id, feature_names, data_array, clusters, clusters_color_scheme, options = {}) {
         // Save the time for debug purposes
         this._timeUpdate =  Date.now();
 
@@ -112,10 +109,10 @@ class ParallelCoordinates {
         // Update arrays
         this._features = feature_names;
         this._data = data_array;
-        this._color = clusters_list;
-        this._clusters_color_scheme = clusters_color_scheme;
-        this._aux_features = aux_features;
-        this._aux_data = aux_data_array;
+        this._color = clusters;
+        this._color_scheme = clusters_color_scheme;
+        //this._aux_features = aux_features;
+        //this._aux_data = aux_data_array;
 
         // Debug statistics counters
         this._search_quantity = 0;
@@ -169,19 +166,6 @@ class ParallelCoordinates {
         if (options.hasOwnProperty('debug')) this._debug = options.debug;
             else if (!this.hasOwnProperty('_debug')) this._debug = false;
 
-        // Arrays with (line id)<->(id in _data)
-        this._cells = this._data.map((row, i) =>
-            [row[0]]
-                .concat((this.options.draw['mode'] === "cluster") ? [this._color[i]] : [])
-                .concat(row[1].map(String))
-                .concat((this._aux_data !== null) ? this._aux_data[i][1].map(String) : [])
-                .concat((this.options.draw['mode'] === "cluster") ?
-                    [rgbToHex(this._clusters_color_scheme[this._color[i]])] : []));
-
-        if (this.options.draw.parts_visible.table)
-            this._ids = this._cells.map(x =>
-                (this.options.draw['mode'] === "cluster") ? x.slice(0, -1) : x);
-
         // Initiate the arrays and draw the stuff
         this._prepareGraphAndTables();
 
@@ -211,18 +195,81 @@ class ParallelCoordinates {
                                 'id': 's' + this.element_id});
 
         // Construct the list with dimentions on graph
-        this._graph_features = this._features.filter((elem, i) => {
-            if (!('dims' in this.options.skip)) return true;
-            if (this.options.skip['dims'].mode === 'none') return true;
-            if (this.options.skip['dims'].mode === 'show' && this.options.skip['dims'].values.includes(elem)) return true;
-            return this.options.skip['dims'].mode === 'hide' && !this.options.skip['dims'].values.includes(elem);
+        this._graph_features = this._features.filter((elem) => {
+            let skip = this.options.skip;
+
+            if (!('dims' in skip)) return true;
+            if (skip['dims'].mode === 'none') return true;
+            if (skip['dims'].mode === 'show' && skip['dims'].values.includes(elem)) return true;
+            return skip['dims'].mode === 'hide' && !skip['dims'].values.includes(elem);
         });
+
+        // Reference array with all values as strings
+        this._ids = this._data.map((row) => row.map(String));
+
+        // Transposed data for future work
+        this._values = this._data[0].map((col, i) => this._data.map(row => row[i]));
+
+        // Arrays with numbers-only and string data parts
+        this._features_numbers = this._features.filter((name, i) => this._values[i].every(x => !isNaN(x)));
+        this._features_strings = this._features.filter((name) => !this._features_numbers.includes(name));
+
+        // Coloring modes if clustering enabled
+        if (this.options.draw.mode === "cluster")
+        {
+            let clusters = this._color,
+                color_scheme = this._color_scheme;
+
+            // Clusters array can be null. In this case clustering is done automatically by the 2nd column.
+            if (typeof clusters === 'undefined' ||
+                clusters === null ||
+                clusters === [])
+                clusters = this._features[1];
+
+            // Next, if we got a string - consider it as a clustering column.
+            if (typeof clusters === 'string')
+                // In case we got no scematics - generate a new one.
+                if (typeof color_scheme === 'undefined' ||
+                    color_scheme === null ||
+                    color_scheme === [])
+                {
+                    this._color = this._values[this._features.findIndex(x => x === clusters)];
+
+                    /* colors: (230, 25, 75), (60, 180, 75), (0, 130, 200),
+                    (245, 130, 48), (145, 30, 180), (70, 240, 240), (240, 50, 230),
+                    (210, 245, 60), (250, 190, 190), (0, 128, 128), (230, 190, 255),
+                    (170, 110, 40), (255, 250, 200), (128, 0, 0), (170, 255, 195),
+                    (128, 128, 0), (255, 215, 180), (0, 0, 128), (255, 225, 25)*/
+
+                    let _red = [230, 60, 0, 245, 145, 70, 240, 210, 250, 0, 230, 170, 255, 128, 170, 128, 255, 0, 255, 0],
+                        _green = [25, 180, 130, 130, 30, 240, 50, 245, 190, 128, 190, 110, 250, 0, 255, 128, 215, 0, 225, 128],
+                        _blue = [75, 75, 200, 48, 180, 240, 230, 60, 190, 128, 255, 40, 200, 0, 195, 0, 180, 128, 25, 64],
+
+                        clusters_unique = [...new Set(this._color)].sort((a, b) => a - b),
+                        len = clusters_unique.length;
+
+                    this._color_scheme = {};
+                    
+                    for (let i = 0; i < len; i++)
+                        this._color_scheme[clusters_unique[i]] =
+                            {
+                                r: _red[i]/255.,
+                                g: _green[i]/255.,
+                                b: _blue[i]/255.
+                            };
+                }
+        }
+
+        // Future datatable cells (w/ color if present)
+        this._cells = (this.options.draw['mode'] === "cluster") ?
+            this._ids.map((x, i) => x.concat([rgbToHex(this._color_scheme[this._color[i]])])):
+            this._ids;
 
         // Options for selectBox
         if (this.options.draw.parts_visible.selector) {
             this._selectBox = $('#s' + this.element_id).select2({
                 closeOnSelect: false,
-                data: this._features.map((d, i) => {
+                data: this._features.map((d) => {
                     return {id: d, text: d, selected: this._graph_features.includes(d)};
                 }),
                 multiple: true,
@@ -240,20 +287,11 @@ class ParallelCoordinates {
         // Append an SVG to draw lines on
         let container = d3.select("#" + this.element_id)
             .append('div')
-				.attr('id', 'flex' + this.element_id)
-                .style({'display': 'flex',
-                        'width': 'auto',
-                        'overflow': 'auto',
-				        'flex-wrap': 'wrap'}),
+				.attr('class', 'pc-container'),
             svg_container = container.append("div")
-                .style({'width': 'auto',
-                        'flex': '0',
-                        'margin-right': '20px',
-                        'margin-bottom': '20px'});
+                .attr('class', 'pc-svg-container');
 
-        this._graph = svg_container
-            .append("svg")
-                .style("overflow", "auto");
+        this._graph = svg_container.append("svg");
 
         // A hint on how to use
         if (this.options.draw.parts_visible.hint)
@@ -269,11 +307,10 @@ class ParallelCoordinates {
         if (this.options.draw.parts_visible.table)
             container
                 .append("div")
-                    .attr("id", "t" + this.element_id + "_wrapper")
-                    .style({"overflow": "auto",
-                            "min-width": "500px",
-                            "max-width": "max-content",
-                            'flex': '1'});
+                    .attr({
+                        "id": "t" + this.element_id + "_wrapper-outer",
+                        'class': 'pc-table-wrapper'
+                    });
 
         // Draw the graph and the table
         this._createGraph();
@@ -282,7 +319,7 @@ class ParallelCoordinates {
         if(this.options.draw['mode'] === 'cluster' &&
             this.options.draw.parts_visible.cluster_table){
                 this._ci_div = container.append('div')
-                    .style({"flex-basis": "100%"});
+                    .attr("class", 'pc-cluster-table-wrapper');
                 this._createClusterInfo();
         }
 
@@ -326,10 +363,8 @@ class ParallelCoordinates {
         // Arrays for x and y data, and brush dragging
         this._x = d3.scale.ordinal().rangePoints([0, this._width], 1);
         this._y = {};
-        this._dim_types = {};
         this._ranges = {};
         this._dragging = {};
-        this._values = [];
 
         // Line and axis parameters, arrays with lines (gray and colored)
         this._line = d3.svg.line().interpolate("monotone");
@@ -340,25 +375,21 @@ class ParallelCoordinates {
             .attr("transform", "translate(" + this._margin.left + "," + this._margin.top + ")");
 
         // Extract the list of dimensions and create a scale for each
-        this._x.domain(this._graph_features.map((dim, index, arr) => {
-            this._values.push(this._data.map((row) => row[1][this._features.indexOf(dim)]));
+        this._x.domain(this._graph_features);
 
-            if (this._values[index].every(x => !isNaN(x))) {
+        // Make scales for each feature
+        this._graph_features.forEach((dim, index) => {
+            if (this._isNumbers(dim))
                 this._y[dim] = d3.scale.linear()
                     .domain([Math.min(...this._values[index]), Math.max(...this._values[index])])
                     .range([this._height, 0]);
-                this._dim_types[dim] = "linear";
-            }
             else {
                 this._y[dim] = d3.scale.ordinal()
                     .domain(this._values[index])
                     .rangePoints([this._height, 0]);
-                this._dim_types[dim] = "ordinal";
                 this._ranges[dim] = this._y[dim].domain().map(this._y[dim]);
             }
-
-            return dim;
-        }));
+        });
 
         // Array to make brushes
         this._line_data = [];
@@ -387,7 +418,7 @@ class ParallelCoordinates {
             // Cluster color scheme is applied to the stroke color 
             .attr("stroke", (d, i) => (
                 (this.options.draw['mode'] === "cluster")?
-                    rgbToHex(this._clusters_color_scheme[this._color[i]]):
+                    rgbToHex(this._color_scheme[this._color[i]]):
                     "#0082C866")
                 )
             .attr("stroke-opacity", "0.4")
@@ -480,7 +511,7 @@ class ParallelCoordinates {
                     this._x.domain(this._graph_features);
                     this._g.attr("transform", function (d) { return "translate(" + this._position(d) + ")"; }.bind(this));
                 }.bind(this))
-                .on("dragend", function (d) {
+                .on("dragend", function (d, i) {
                     delete _PCobject._dragging[d];
                     _PCobject._transition(d3.select(this)).attr("transform", "translate(" + _PCobject._x(d) + ")");
                     _PCobject._transition(_PCobject._foreground).attr("d", _PCobject._path.bind(_PCobject));
@@ -490,6 +521,10 @@ class ParallelCoordinates {
                         .delay(500)
                         .duration(0)
                         .attr("visibility", null);
+                   // d3.selectAll(".pc-titles-text").attr("y", (x, num) => (i % 2 == 0) ? -9 : -18);
+
+
+                    /// TODO: chained append maybe?
                 }));
 
         // Add an axis and titles
@@ -497,9 +532,12 @@ class ParallelCoordinates {
             .attr("class", "axis")
             .each(function (d) { d3.select(this).call(_PCobject._axis.scale(_PCobject._y[d])); })
             .append("text")
-            .style("text-anchor", "middle")
-            .attr("y", -9)
-            .text(function (d) { return d; });
+                .style("text-anchor", "middle")
+                .attr({
+                    "y": (x, num) => (num % 2 == 0) ? -9 : -18,
+                    "class": "pc-titles-text"
+                })
+                .text((x) => x);
 
         // Add and store a brush for each axis
         this._g.append("g")
@@ -522,34 +560,21 @@ class ParallelCoordinates {
         var _PCobject = this;
         
         // Clear the table div if something is there
-        $('#t' + this.element_id + "_wrapper").empty();
+        $('#t' + this.element_id + "_wrapper-outer").empty();
 
         // Add table to wrapper
-        d3.select("#t" + this.element_id + "_wrapper")
+        d3.select("#t" + this.element_id + "_wrapper-outer")
             .append("table")
                 .attr({"id": "t" + this.element_id,
                         "class": "table hover"});
 
+        // Initialize a search result with all objects visible and
         // 'visible' data array with lines on foreground (not filtered by a brush)
+        this._search_results = this._ids;
         this._visible = this._ids;
 
-        // Initialize a search result with all objects visible
-        this._search_results = this._ids;
-
-        // Array with headers
-        this._theader_array = this._features.slice();
-
-        if (this.options.draw['mode'] === "cluster") this._theader_array.unshift('Cluster');
-
-        if (this.options.draw.hasOwnProperty('first_column_name'))
-            this._theader_array.unshift(this.options.draw['first_column_name']);
-        else this._theader_array.unshift('ID');
-
-        if (this._aux_features !== null)
-            this._theader_array = this._theader_array.concat(this._aux_features);
-
         // Map headers for the tables
-        this._theader = this._theader_array.map(row => {
+        this._theader = this._features.map(row => {
             return {
                 title: row,
 
@@ -562,16 +587,6 @@ class ParallelCoordinates {
                 }
             };
         });
-
-        /*// Array with table cell data
-        //this._tcells = this._ids/*;_data.map((row, i) =>
-            [row[0]]
-                .concat((this.options.draw['mode'] === "cluster") ? [this._color[i]] : [])
-                .concat(row[1].map(String))
-                .concat((this._aux_data !== null)?this._aux_data[i][1].map(String):[])
-                .concat((this.options.draw['mode'] === "cluster") ?
-                    [rgbToHex(this._clusters_color_scheme[this._color[i]])] : [])
-        //);*/
 
         // Vars for table and its datatable
         this._table = $('#t' + this.element_id);
@@ -687,10 +702,7 @@ class ParallelCoordinates {
     // Create cluster info buttons (which call the table creation)
     _createClusterInfo() {
         // Add a div to hold a label and buttons
-        this._ci_buttons_div = this._ci_div
-            .append('div')
-                .style({'margin-right': '15px',
-                        'flex-shrink': '0'});
+        this._ci_buttons_div = this._ci_div.append('div');
 
         // Add 'Choose Cluster' text to it
         this._ci_buttons_div
@@ -706,7 +718,7 @@ class ParallelCoordinates {
                 .attr({'class': 'ci-button-group',
                         'id': 'ci_buttons_' + this.element_id});
 
-        let cluster_count = d3.keys(this._clusters_color_scheme).map(x => this._color.count(x)),
+        let cluster_count = d3.keys(this._color_scheme).map(x => this._color.count(x)),
             scale = d3.scale.sqrt()
                 .domain([Math.min(...cluster_count), Math.max(...cluster_count)])
                 .range([11, 0]);
@@ -714,11 +726,11 @@ class ParallelCoordinates {
         // Add corresponding buttons to every color
         this._ci_buttons
             .selectAll("a")
-                .data(d3.keys(this._clusters_color_scheme))
+                .data(d3.keys(this._color_scheme))
                 .enter().append('a')
                     .attr({'class': 'ci-button',
                             'title': (id, i) => "Cluster " + id + ".\nElement count: " + cluster_count[i] + "."})
-                    .style({'background': id => rgbToHex(this._clusters_color_scheme[id]),
+                    .style({'background': id => rgbToHex(this._color_scheme[id]),
                             'box-shadow': (id, i) => 'inset 0px 0px 0px ' + scale(cluster_count[i]) + 'px #fff'})
                     .text(id => id)
                     .on("click", id => {
@@ -736,7 +748,7 @@ class ParallelCoordinates {
                                         'align-items': 'center'});
 
                             // Calculate the Number Of Columns with buttons
-                            let noc = Math.ceil(Object.keys(this._clusters_color_scheme).length / 11);
+                            let noc = Math.ceil(Object.keys(this._color_scheme).length / 11);
 
                             // Fix the div with the buttons a little bit
                             this._ci_buttons_div
@@ -747,7 +759,7 @@ class ParallelCoordinates {
 
                         // Clean all children
                         this._ci_table_div
-                            .style('border', "5px dashed " + rgbToHex(this._clusters_color_scheme[id]) + "33")
+                            .style('border', "5px dashed " + rgbToHex(this._color_scheme[id]) + "33")
                             .attr('class', 'ci-table')
                             .html('');
 
@@ -793,20 +805,15 @@ class ParallelCoordinates {
             }
         }});
 
-        // Prepare cells
+        // Prepare data and values arrays for calculations
         this._ci_cluster_data = this._data
-            .filter((x, i) => this._color[i] === d3.event.target.innerText)
-            .map((x, i) =>
-                (this._aux_data !== null && this._aux_data[i] !== undefined) ?
-                    x[1].concat(this._aux_data[i][1]) :
-                    x[1]
-            );
+            .filter((x, i) => this._color[i] === d3.event.target.innerText);
 
-        let features = this._features;
-        if(this._aux_features !== null) features = features.concat(this._aux_features);
+        this._ci_cluster_values = this._ci_cluster_data[0].map((col, i) => this._ci_cluster_data.map(row => row[i]));
 
-        this._ci_cells = features.map((x, i) =>
-            (features.includes(x)) ?
+        // Prepare table cells
+        this._ci_cells = this._features.map((x, i) =>
+            (this._isNumbers(x)) ?
             [
                 x,
                 d3.min(this._ci_cluster_data, row => row[i]),
@@ -816,27 +823,14 @@ class ParallelCoordinates {
                 (this._ci_cluster_data.length > 1) ? d3.deviation(this._ci_cluster_data, row => row[i]) : '-'
             ] : [x + ' <i>(click to expand)</i>', '-','-','-','-','-']);
 
-        /*
-        this._ci_stats = this._features.map((f, i) =>
-        {
-            let values = this._data
-                    .filter((x, j) => this._color[j] === d3.event.target.innerText)
-                    .map((data) => data[1][i]),
-                stat = [...new Set(values)].map((x)=>[x, values.count(x)]);
-
-            return [f, stat];
-        });
-         */
-
-        this._ci_aux_stats = (this._aux_features !== null) ? this._aux_features.map((f, i) =>
-        {
-            let values = this._aux_data
-                    .filter((x, j) => this._color[j] === d3.event.target.innerText)
-                    .map((data) => data[1][i]),
-                stat = [...new Set(values)].map((x)=>[x, values.count(x)]);
-
-            return [f, stat];
-        }) : [];
+        // Calculate stats for string values
+        this._ci_string_stats = this._features_strings.map((name) => [name,
+            [...new Set(
+                this._ci_cluster_values[
+                    this._features.findIndex((x) => x === name)
+                ])
+            ].map(x => [x,
+                this._ci_cluster_values[this._features.findIndex((x) => x === name)].count(x)])]);
 
         // Add 'Number of elements: N' text
         this._ci_table_div
@@ -871,19 +865,18 @@ class ParallelCoordinates {
             })
             // Add event listener for opening and closing details
             .on('click', 'td.firstCol', function(){
-                if (!this.innerText.endsWith(' (click to expand)')) return;
+                if (!this.innerText.endsWith(' (click to expand)') || _PCobject._ci_string_stats === [] ) return;
 
-                let id = _PCobject._aux_features.indexOf(this.innerText.replace(' (click to expand)', '')),
+                let feature = this.innerText.replace(' (click to expand)', ''),
+                    id = _PCobject._features_strings.indexOf(feature),
+                    table_id = 'ci-' + _PCobject.element_id + '-' + id,
                     tr = $(this).closest('tr'),
                     row = table.row( tr ),
-                    text = '<table class="ci_aux_table" style="width:min-content">';
+                    text = '<table id="' + table_id + '" class="ci_aux_table" style="width:min-content">';
 
-                for(let i = 0; _PCobject._ci_aux_stats !== [] &&
-                                i<_PCobject._ci_aux_stats[id][1].length; i++)
-                    text += '<tr><td>' +
-                        _PCobject._ci_aux_stats[id][1][i][0] + '</td><td> ' +
-                        _PCobject._ci_aux_stats[id][1][i][1] +
-                        '</td></tr>';
+                _PCobject._ci_string_stats[id][1].forEach(x => {
+                    text += '<tr><td>' + x[0] + '</td><td> ' + x[1] + '</td></tr>'
+                });
 
                 text+='</table>';
 
@@ -896,21 +889,21 @@ class ParallelCoordinates {
                     row.child(text).show();
                     tr.addClass('shown');
 
-                    let table = $('.ci_aux_table').DataTable({
+                    let table = $('#' + table_id).DataTable({
                         columns:[
-                            {title:_PCobject._aux_features[id]},
-                            {title:"Count"}
+                            {title: feature},
+                            {title: "Count"}
                             ],
                         dom: 't',
                         order: [[1, "desc"]]
                     });
 
                     $(table.table().body())
-                        .on("mouseover", 'tr', function (d, i) {
+                        .on("mouseover", 'tr', function () {
                             $(table.rows().nodes()).removeClass('table-selected-line');
                             $(table.row(this).nodes()).addClass('table-selected-line');
                         })
-                        .on("mouseout", 'tr', function (d) {
+                        .on("mouseout", 'tr', function () {
                             $(table.rows().nodes()).removeClass('table-selected-line');
                         });
                 }
@@ -923,6 +916,8 @@ class ParallelCoordinates {
     // Functions to perform id transformation
     _tableToParcoords(object) { return this._cells.findIndex(x => object.every((y, i) => y === x[i])); }
     _parcoordsToTable(index) { return this._cells[index]; }
+
+    _isNumbers(featureName) { return this._features_numbers.includes(featureName); }
 
     // Callback to change the lines visibility after 'draw()' completed
     _on_table_ready(object) {
@@ -937,24 +932,11 @@ class ParallelCoordinates {
 
     // Bug fixes related to css
     _fix_css_in_table(id){
-        d3.select('#' + id)
-            .style({'display': 'revert',
-                    'width': 'auto',
-                    'overflow': 'auto'});
-
-        d3.select('#' + id + '_paginate')
-            .style({'display': 'flex',
-                    'justify-content': 'flex-end',
-                    'float': 'right',
-                    'width': 'max-content'});
-
-        d3.select('#' + id + '_info')
-            .style({'display': 'inline-block',
-                    'width': 'max-content'});
-
-        document.getElementById(id + '_length').children[0].style = 'font-size: 12px !important;';
-        document.getElementById(id + '_length').children[0].children[0].style = 'height: auto;';
-        document.getElementById(id + '_filter').children[0].style = 'font-size: 12px !important;';
+        d3.select('#' + id + '_wrapper')
+            .insert("div", ".dataTables_filter + *")
+            .attr('class', 'pc-table-contents')
+            .node()
+                .appendChild(document.getElementById(id));
     }
 
     // Functions for lines and brushes
@@ -992,7 +974,7 @@ class ParallelCoordinates {
             let isVisible = actives.every(function (p, i) {
                 let value = null;
 
-                if (object._dim_types[p] === "ordinal")
+                if (!object._isNumbers(p))
                     value = object._ranges[p][object._y[p].domain().findIndex(x => x === d[p])];
                 else value = d[p];
 
