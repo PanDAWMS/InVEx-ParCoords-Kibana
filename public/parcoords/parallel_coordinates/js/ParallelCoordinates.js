@@ -816,11 +816,12 @@ class ParallelCoordinates {
             (this._isNumbers(x)) ?
             [
                 x,
-                d3.min(this._ci_cluster_data, row => row[i]),
-                d3.mean(this._ci_cluster_data, row => row[i]),
-                d3.max(this._ci_cluster_data, row => row[i]),
-                d3.median(this._ci_cluster_data, row => row[i]),
-                (this._ci_cluster_data.length > 1) ? d3.deviation(this._ci_cluster_data, row => row[i]) : '-'
+                d3.min(this._ci_cluster_data, row => (row[i] === null) ? 0 : row[i]),
+                d3.mean(this._ci_cluster_data, row => (row[i] === null) ? 0 : row[i]),
+                d3.max(this._ci_cluster_data, row => (row[i] === null) ? 0 : row[i]),
+                d3.median(this._ci_cluster_data, row => (row[i] === null) ? 0 : row[i]),
+                (this._ci_cluster_data.length > 1) ? d3.deviation(this._ci_cluster_data, row =>
+                    (row[i] === null) ? 0 : row[i]) : '-'
             ] : [x + ' <i>(click to expand)</i>', '-','-','-','-','-']);
 
         // Calculate stats for string values

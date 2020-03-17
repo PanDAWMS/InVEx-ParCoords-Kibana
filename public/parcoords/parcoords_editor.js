@@ -1,41 +1,119 @@
 import React, {Fragment} from 'react';
 
-import {EuiPanel, EuiButtonToggle, EuiTitle, EuiSpacer, EuiFlexGrid,
-    EuiFlexGroup, EuiFlexItem, EuiIconTip, EuiCheckbox} from '@elastic/eui';
+import { EuiPanel, EuiButtonToggle, EuiTitle, EuiSpacer, EuiFlexGrid, EuiHorizontalRule,
+    EuiFlexGroup, EuiFlexItem, EuiIconTip, EuiCheckbox, EuiComboBox, EuiFormRow } from '@elastic/eui';
 //import { uiModules } from '../../../../src/legacy/ui/public/modules';
-//import {uiModules} from 'ui/modules';
+//import { uiModules } from 'ui/modules';
 
 //const app = uiModules.get('kibana');
 
 export class parcoordsEditor extends React.Component {
-    onCounterChange = ev => {
+    constructor(props) {
+        super(props);
+
+        this._pc = this.props.stateParams.parcoords_params;
+        this._visible = this._pc.draw.parts_visible;
+
+
+
+
+    }
+
+
+    /*onCounterChange = ev => {
         this.props.setValue('counter', parseInt(ev.target.value));
+    };*/
+
+    onToggleChange = (e, component) => {
+        let _pc = this.props.stateParams.parcoords_params;
+
+        switch (component) {
+            case 'colors':
+                this.props.setValue('colors', !this.props.stateParams.colors);
+                return;
+            case 'debug':
+                _pc.debug = !_pc.debug;
+                break;
+            default:
+                _pc.draw.parts_visible[component] = !_pc.draw.parts_visible[component]
+        }
+
+        this._pc = _pc;
+        this._visible = this._pc.draw.parts_visible;
+
+        this.props.setValue('parcoords_params', _pc);
     };
 
+
+
+
+    onFeatureListChange = selected => {
+        this._selected_features = selected;
+        this.props.setValue('selected_options', selected);
+    };
+
+    onColorChange = selected => {
+        //console.log(selected);
+
+        this._color_feature = selected;
+        this.props.setValue('color_feature', selected);
+    };
+
+
     render() {
-        let pc = this.props.stateParams.parcoords_params,
-            visible = pc.draw.parts_visible;
+        //console.log('render_called', this);
 
+        let features = this.props.aggsLabels.split(','),
+            lastBucket = '';
+        this._selected_features = this.props.stateParams.selected_options;
+        this._color_feature =  this.props.stateParams.color_feature;
 
-        this.onToggleChange = (e, component) => {
-            let _pc = this.props.stateParams.parcoords_params;
+        if (features.length === 0 || features[0] === '') return null;
 
-            switch (component) {
-                case 'colors':
-                    this.props.setValue('colors', !this.props.stateParams.colors);
-                    return;
-                case 'debug':
-                    _pc.debug = !_pc.debug;
-                    break;
-                default:
-                    _pc.draw.parts_visible[component] = !_pc.draw.parts_visible[component]
+        for(let i = this.props.aggs.aggs.length - 1; i > 0 && lastBucket === ''; i--)
+        {
+            let x = this.props.aggs.aggs[i];
+            if (!x.enabled) continue;
+            if (x.__type.type === "buckets" && x.params.field !== undefined)
+                lastBucket = x.params.field.displayName;
+        }
+
+        this._box_options = features.map(x => {return { label: x }});
+
+        if (typeof this._selected_features === 'undefined' || this._selected_features === null
+            || this._selected_features.length === 0)
+        {
+            this._selected_features = this._box_options;
+            this.props.setValue('selected_options', this._box_options);
+        }
+
+        else {
+            let checked = this._box_options.filter(x =>
+                this._selected_features.some(y =>  x.label === y.label));
+
+            if (checked.length !== this._selected_features.length) {
+                this._selected_features = this._box_options;
+                this.props.setValue('selected_options', checked);
             }
+        }
 
-            this.props.setValue('parcoords_params', _pc);
 
-            pc = this.props.stateParams.parcoords_params;
-            visible = pc.draw.parts_visible;
-        };
+
+        // console.log('render_color', this, this._selected_features, this._box_options, this._color_feature);
+
+        if (typeof this._color_feature === 'undefined' || this._color_feature === null ||
+            this._color_feature.length === 0 || typeof this._color_feature[0] === 'undefined' ||
+            !features.some(x => x === this._color_feature[0].label))
+        {
+            let index = this._box_options.findIndex(x => x.label.includes(lastBucket));
+
+            this._color_feature = [this._box_options[(index !== -1) ? index : 0]];
+            this.props.setValue('color_feature', this._color_feature);
+
+            //console.log('render_color-F', this, this._selected_features, this._box_options, this._color_feature);
+        }
+
+        //console.log('render_return', this, this._selected_features, this._box_options, this._color_feature);
 
         return (
             <div>
@@ -55,66 +133,107 @@ export class parcoordsEditor extends React.Component {
                         </EuiFlexItem>
                     </EuiFlexGroup>
 
-                    <EuiSpacer/>
+                    <EuiSpacer size="s"/>
 
                     <EuiButtonToggle
                         label="Table representing the data"
-                        iconType={visible.table ? 'eye' : 'eyeClosed'}
+                        iconType={this._visible.table ? 'eye' : 'eyeClosed'}
                         onChange={(e) => this.onToggleChange(e, 'table')}
-                        isSelected={visible.table}
+                        isSelected={this._visible.table}
                         size="s"
                         isEmpty
                         //isIconOnly
                     />
 
-                    <EuiSpacer size="m"/>
+                    <EuiSpacer size="xs"/>
 
                     <EuiButtonToggle
                         label="Hint under the graph"
-                        iconType={visible.hint ? 'eye' : 'eyeClosed'}
+                        iconType={this._visible.hint ? 'eye' : 'eyeClosed'}
                         onChange={(e) => this.onToggleChange(e, 'hint')}
-                        isSelected={visible.hint}
+                        isSelected={this._visible.hint}
                         size="s"
                         isEmpty
                         //isIconOnly
                     />
 
-                    <EuiSpacer size="m"/>
+                    <EuiSpacer size="xs"/>
 
                     <EuiButtonToggle
                         label="Selector"
-                        iconType={visible.selector ? 'eye' : 'eyeClosed'}
+                        iconType={this._visible.selector ? 'eye' : 'eyeClosed'}
                         onChange={(e) => this.onToggleChange(e, 'selector')}
-                        isSelected={visible.selector}
+                        isSelected={this._visible.selector}
                         size="s"
                         isEmpty
                         //isIconOnly
                     />
 
-                    <EuiSpacer size="m"/>
+                    <EuiSpacer size="xs"/>
 
                     <EuiButtonToggle
                         label="Table advanced controls"
-                        iconType={visible.table_colvis ? 'eye' : 'eyeClosed'}
+                        iconType={this._visible.table_colvis ? 'eye' : 'eyeClosed'}
                         onChange={(e) => this.onToggleChange(e, 'table_colvis')}
-                        isSelected={visible.table_colvis}
+                        isSelected={this._visible.table_colvis}
                         size="s"
                         isEmpty
                         //isIconOnly
                     />
 
-                    <EuiSpacer size="m"/>
+                    <EuiSpacer size="xs"/>
 
                     <EuiButtonToggle
                         label="Cluster information"
-                        iconType={visible.cluster_table ? 'eye' : 'eyeClosed'}
+                        iconType={this._visible.cluster_table ? 'eye' : 'eyeClosed'}
                         onChange={(e) => this.onToggleChange(e, 'cluster_table')}
-                        isSelected={visible.cluster_table}
+                        isSelected={this._visible.cluster_table}
                         size="s"
                         isEmpty
                         //isIconOnly
                     />
+                </EuiPanel>
 
+                <EuiSpacer size="s"/>
+
+                 <EuiPanel>
+                    <EuiTitle size="xs">
+                        <h3>Display options</h3>
+                    </EuiTitle>
+
+                    <EuiSpacer size="s"/>
+
+                     <EuiFormRow
+                        label="Visible features"
+                        helpText="Features to be displayed on the graph">
+                        <EuiComboBox
+                            options={this._box_options}
+                            selectedOptions={this._selected_features}
+                            isClearable={false}
+                            onChange={this.onFeatureListChange}
+                            //onCreateOption={this.onCreateOption}
+                        />
+                     </EuiFormRow>
+
+                    <EuiSpacer size="xs"/>
+
+                    <EuiHorizontalRule size="half" />
+
+                    <EuiCheckbox
+                        id={"ColorCheckbox"}
+                        label="Add colors: "
+                        checked={this.props.stateParams.colors}
+                        onChange={(e) => this.onToggleChange(e, 'colors')}
+                    />
+
+                    <EuiComboBox
+                        placeholder="Select a single option"
+                        singleSelection={{ asPlainText: true }}
+                        options={this._box_options}
+                        selectedOptions={this._color_feature}
+                        onChange={this.onColorChange}
+                        isClearable={false}
+                      />
 
                 </EuiPanel>
 
@@ -128,18 +247,9 @@ export class parcoordsEditor extends React.Component {
                     <EuiSpacer size="s"/>
 
                     <EuiCheckbox
-                        id={"ColorCheckbox"}
-                        label="Use second column as a color grade"
-                        checked={this.props.stateParams.colors}
-                        onChange={(e) => this.onToggleChange(e, 'colors')}
-                    />
-
-                    <EuiSpacer size="xs"/>
-
-                    <EuiCheckbox
                         id={"DebugCheckbox"}
                         label="Debug console output"
-                        checked={pc.debug}
+                        checked={this._pc.debug}
                         onChange={(e) => this.onToggleChange(e, 'debug')}
                     />
                 </EuiPanel>

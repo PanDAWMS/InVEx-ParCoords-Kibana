@@ -57,21 +57,27 @@ export class parcoordsComponent extends React.Component {
 
         return (
             <div style={{width: "100%"}}>
-                <div id={this._id}></div>
+                <div id={this._id}> </div>
             </div>
         );
     }
 
     updatePC() {
+        console.log(this);
+
+
         let vd = this.props.visData,
             dims = vd.columns.map(col => col.name),
             data = vd.rows.map(row => vd.columns.map(col => row[col.id])),
             options = this.props.vis.params.parcoords_params,
-            colors = vd.columns[1].name,
+            colors = this.props.vis.params.color_feature[0].label,
             color_scheme = null;
 
         options.draw.mode = (this.props.vis.params.colors) ? "cluster" : "print";
+        options.skip.dims.mode = 'show';
+        options.skip.dims.values = this.props.vis.params.selected_options.map(x => x.label);
 
+        // todo: set default clustering the last bucket
         if (this._coords === null)
             this._coords = new ParallelCoordinates(this._id, dims, data, colors, color_scheme, options);
         else this._coords.updateData(this._id, dims, data, colors, color_scheme, options);
