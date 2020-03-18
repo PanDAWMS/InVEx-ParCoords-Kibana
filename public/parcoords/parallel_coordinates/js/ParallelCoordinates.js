@@ -195,13 +195,15 @@ class ParallelCoordinates {
                                 'id': 's' + this.element_id});
 
         // Construct the list with dimentions on graph
-        this._graph_features = this._features.filter((elem) => {
+        this._graph_features = this._features.filter(elem => {
             let skip = this.options.skip;
 
             if (!('dims' in skip)) return true;
             if (skip['dims'].mode === 'none') return true;
-            if (skip['dims'].mode === 'show' && skip['dims'].values.includes(elem)) return true;
-            return skip['dims'].mode === 'hide' && !skip['dims'].values.includes(elem);
+            if (skip['dims'].mode === 'show' &&
+                (skip['dims'].values.some(x => (x.includes(elem) || elem.includes(x))))) return true;
+            return skip['dims'].mode === 'hide' &&
+                !skip['dims'].values.some(x => (x.includes(elem) || elem.includes(x)));
         });
 
         // Reference array with all values as strings
@@ -378,26 +380,23 @@ class ParallelCoordinates {
         this._x.domain(this._graph_features);
 
         // Make scales for each feature
-        this._graph_features.forEach((dim, index) => {
+        this._graph_features.forEach(dim => {
             if (this._isNumbers(dim))
                 this._y[dim] = d3.scale.linear()
-                    .domain([Math.min(...this._values[index]), Math.max(...this._values[index])])
+                    .domain([Math.min(...this._values[this._features.indexOf(dim)]),
+                        Math.max(...this._values[this._features.indexOf(dim)])])
                     .range([this._height, 0]);
             else {
                 this._y[dim] = d3.scale.ordinal()
-                    .domain(this._values[index])
+                    .domain(this._values[this._features.indexOf(dim)])
                     .rangePoints([this._height, 0]);
                 this._ranges[dim] = this._y[dim].domain().map(this._y[dim]);
             }
         });
 
         // Array to make brushes
-        this._line_data = [];
-        for (let i = 0; i < this._values[0].length; i++) {
-            let tmp = {};
-            for (let j = 0; j < this._values.length; j++) tmp[this._graph_features[j]] = this._values[j][i];
-            this._line_data.push(tmp);
-        }
+        this._line_data = this._data.map(x =>
+            Object.fromEntries(this._graph_features.map(f => ([f, x[this._features.indexOf(f)]]))));
 
         // Grey background lines for context
         this._background = this._svg.append("g")
@@ -718,7 +717,7 @@ class ParallelCoordinates {
                 .attr({'class': 'ci-button-group',
                         'id': 'ci_buttons_' + this.element_id});
 
-        let cluster_count = d3.keys(this._color_scheme).map(x => this._color.count(x)),
+        let cluster_count = d3.keys(this._color_scheme).map(x => this._color.map(String).count(x)),
             scale = d3.scale.sqrt()
                 .domain([Math.min(...cluster_count), Math.max(...cluster_count)])
                 .range([11, 0]);
@@ -760,7 +759,7 @@ class ParallelCoordinates {
                         // Clean all children
                         this._ci_table_div
                             .style('border', "5px dashed " + rgbToHex(this._color_scheme[id]) + "33")
-                            .attr('class', 'ci-table')
+                            .attr('class', 'ci-table pc-table-wrapper')
                             .html('');
 
                         // Add the 'selected' decoration
@@ -806,9 +805,7 @@ class ParallelCoordinates {
         }});
 
         // Prepare data and values arrays for calculations
-        this._ci_cluster_data = this._data
-            .filter((x, i) => this._color[i] === d3.event.target.innerText);
-
+        this._ci_cluster_data = this._data.filter((x, i) => String(this._color[i]) === d3.event.target.innerText);
         this._ci_cluster_values = this._ci_cluster_data[0].map((col, i) => this._ci_cluster_data.map(row => row[i]));
 
         // Prepare table cells

@@ -219,22 +219,27 @@ export class parcoordsEditor extends React.Component {
 
                     <EuiHorizontalRule size="half" />
 
-                    <EuiCheckbox
-                        id={"ColorCheckbox"}
-                        label="Add colors: "
-                        checked={this.props.stateParams.colors}
-                        onChange={(e) => this.onToggleChange(e, 'colors')}
-                    />
+                     <EuiFlexGroup alignItems="flexStart" gutterSize="s" responsive={false}>
+                        <EuiFlexItem grow={false}>
+                            <EuiCheckbox
+                                id={"ColorCheckbox"}
+                                label="Add colors: "
+                                checked={this.props.stateParams.colors}
+                                onChange={(e) => this.onToggleChange(e, 'colors')}
+                            />
+                        </EuiFlexItem>
 
-                    <EuiComboBox
-                        placeholder="Select a single option"
-                        singleSelection={{ asPlainText: true }}
-                        options={this._box_options}
-                        selectedOptions={this._color_feature}
-                        onChange={this.onColorChange}
-                        isClearable={false}
-                      />
-
+                        <EuiFlexItem grow={false}>
+                            <EuiComboBox
+                                placeholder="Select a single option"
+                                singleSelection={{ asPlainText: true }}
+                                options={this._box_options}
+                                selectedOptions={this._color_feature}
+                                onChange={this.onColorChange}
+                                isClearable={false}
+                            />
+                        </EuiFlexItem>
+                    </EuiFlexGroup>
                 </EuiPanel>
 
                 <EuiSpacer size="s"/>

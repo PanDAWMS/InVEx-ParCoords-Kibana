@@ -90,7 +90,6 @@ export class parcoordsComponent extends React.Component {
     }
 
     componentDidUpdate() {
-        this.updatePC();
         this.props.renderComplete();
     }
 }

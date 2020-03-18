@@ -189,7 +189,9 @@ mark {
 
 .ci-table{
     width: 100%;
+    max-width: 100%;
     min-width: 400px;
+    margin-right: 0px !important;
     white-space: nowrap;
     padding: 10px;
 }
