@@ -149,7 +149,7 @@ mark {
 }
 
 .ci-button {
-    padding-top: 1em;
+    padding-top: 17px;
     outline: 1px dashed lightgray;
     text-shadow: #000000 1px 1px 0, 0px 0px 1px rgba(215, 142, 131, 0);
     text-align: center;
@@ -157,8 +157,8 @@ mark {
     font-weight: 600;
     line-height: 1.6;
     color: #fefefe;
-    width: 45px;
-    height: 45px;
+    width: 55px;
+    height: 55px;
 
     margin-left: 1px;
     margin-top: 1px;

@@ -496,8 +496,8 @@ class ParallelCoordinates {
             .data(this._graph_features)
             .enter().append("g")
             .attr("class", "dimension")
-            .attr("transform", function (d) { return "translate(" + _PCobject._x(d) + ")"; })
-            .call(d3.behavior.drag()
+            .attr("transform", function (d) { return "translate(" + _PCobject._x(d) + ")"; });
+            /*.call(d3.behavior.drag()
                 .origin(function (d) { return { x: this._x(d) }; }.bind(this))
                 .on("dragstart", function (d) {
                     this._dragging[d] = this._x(d);
@@ -524,7 +524,7 @@ class ParallelCoordinates {
 
 
                     /// TODO: chained append maybe?
-                }));
+                }));*/
 
         // Add an axis and titles
         this._g.append("g")

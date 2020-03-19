@@ -73,7 +73,7 @@ export class parcoordsEditor extends React.Component {
         for(let i = this.props.aggs.aggs.length - 1; i > 0 && lastBucket === ''; i--)
         {
             let x = this.props.aggs.aggs[i];
-            if (!x.enabled) continue;
+            if (!x.enabled || !x.hasOwnProperty('__type')) continue;
             if (x.__type.type === "buckets" && x.params.field !== undefined)
                 lastBucket = x.params.field.displayName;
         }
@@ -116,7 +116,7 @@ export class parcoordsEditor extends React.Component {
         //console.log('render_return', this, this._selected_features, this._box_options, this._color_feature);
 
         return (
-            <div>
+            <div className="eEditorMenu">
                 <EuiPanel>
                     <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
                         <EuiFlexItem grow={false}>
@@ -219,27 +219,22 @@ export class parcoordsEditor extends React.Component {
 
                     <EuiHorizontalRule size="half" />
 
-                     <EuiFlexGroup alignItems="flexStart" gutterSize="s" responsive={false}>
-                        <EuiFlexItem grow={false}>
-                            <EuiCheckbox
-                                id={"ColorCheckbox"}
-                                label="Add colors: "
-                                checked={this.props.stateParams.colors}
-                                onChange={(e) => this.onToggleChange(e, 'colors')}
-                            />
-                        </EuiFlexItem>
+                    <EuiCheckbox
+                        id={"ColorCheckbox"}
+                        label="Add colors: "
+                        checked={this.props.stateParams.colors}
+                        onChange={(e) => this.onToggleChange(e, 'colors')}
+                    />
 
-                        <EuiFlexItem grow={false}>
-                            <EuiComboBox
-                                placeholder="Select a single option"
-                                singleSelection={{ asPlainText: true }}
-                                options={this._box_options}
-                                selectedOptions={this._color_feature}
-                                onChange={this.onColorChange}
-                                isClearable={false}
-                            />
-                        </EuiFlexItem>
-                    </EuiFlexGroup>
+                    <EuiComboBox
+                        placeholder="Select a single option"
+                        singleSelection={{ asPlainText: true }}
+                        options={this._box_options}
+                        selectedOptions={this._color_feature}
+                        onChange={this.onColorChange}
+                        isClearable={false}
+                    />
+
                 </EuiPanel>
 
                 <EuiSpacer size="s"/>
