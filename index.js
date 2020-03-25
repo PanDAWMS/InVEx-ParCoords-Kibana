@@ -10,6 +10,6 @@ export default function(kibana) {
         resolve(__dirname, 'public/parallel_coordinates/css/*'),
       ].find(p => existsSync(p)),
       visTypes: ['plugins/invex_parcoords/parcoords/parcoords'],
-    },
+    }
   });
 }

@@ -2,10 +2,6 @@ import React, {Fragment} from 'react';
 
 import { EuiPanel, EuiButtonToggle, EuiTitle, EuiSpacer, EuiFlexGrid, EuiHorizontalRule,
     EuiFlexGroup, EuiFlexItem, EuiIconTip, EuiCheckbox, EuiComboBox, EuiFormRow } from '@elastic/eui';
-//import { uiModules } from '../../../../src/legacy/ui/public/modules';
-//import { uiModules } from 'ui/modules';
-
-//const app = uiModules.get('kibana');
 
 export class parcoordsEditor extends React.Component {
     constructor(props) {
@@ -13,16 +9,7 @@ export class parcoordsEditor extends React.Component {
 
         this._pc = this.props.stateParams.parcoords_params;
         this._visible = this._pc.draw.parts_visible;
-
-
-
-
     }
-
-
-    /*onCounterChange = ev => {
-        this.props.setValue('counter', parseInt(ev.target.value));
-    };*/
 
     onToggleChange = (e, component) => {
         let _pc = this.props.stateParams.parcoords_params;
@@ -44,24 +31,19 @@ export class parcoordsEditor extends React.Component {
         this.props.setValue('parcoords_params', _pc);
     };
 
-
-
-
     onFeatureListChange = selected => {
         this._selected_features = selected;
         this.props.setValue('selected_options', selected);
     };
 
     onColorChange = selected => {
-        //console.log(selected);
-
         this._color_feature = selected;
         this.props.setValue('color_feature', selected);
     };
 
 
     render() {
-        //console.log('render_called', this);
+        //console.log('editor_render', this);
 
         let features = this.props.aggsLabels.split(','),
             lastBucket = '';
@@ -97,10 +79,6 @@ export class parcoordsEditor extends React.Component {
             }
         }
 
-
-
-        // console.log('render_color', this, this._selected_features, this._box_options, this._color_feature);
-
         if (typeof this._color_feature === 'undefined' || this._color_feature === null ||
             this._color_feature.length === 0 || typeof this._color_feature[0] === 'undefined' ||
             !features.some(x => x === this._color_feature[0].label))
@@ -109,11 +87,7 @@ export class parcoordsEditor extends React.Component {
 
             this._color_feature = [this._box_options[(index !== -1) ? index : 0]];
             this.props.setValue('color_feature', this._color_feature);
-
-            //console.log('render_color-F', this, this._selected_features, this._box_options, this._color_feature);
         }
-
-        //console.log('render_return', this, this._selected_features, this._box_options, this._color_feature);
 
         return (
             <div className="eEditorMenu">

@@ -1,6 +1,6 @@
 {
   "name": "invex_parcoords",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "description": "A visualization, which contains parallel coordinates diagram with a table connected to it",
   "main": "index.js",
   "kibana": {
@@ -35,6 +35,7 @@
     "eslint-plugin-react": "^7.12.4"
   },
   "dependencies": {
+    "@PanDAWMS/invex-parallel-coordinates": "https://github.com/PanDAWMS/InVEx-ParCoords-SA.git#npm",
     "d3": "3",
     "datatables.mark.js": "^2.0.1",
     "datatables.net-buttons-jqui": "^1.6.1",

@@ -18,7 +18,7 @@ import "js-cookie";
 import "simple-statistics";
 import uniqueId from 'react-html-id';
 
-import ParallelCoordinates from './parallel_coordinates/js/ParallelCoordinates.js';
+import ParallelCoordinates from '@PanDAWMS/invex-parallel-coordinates';
 
 import "select2/dist/css/select2.css";
 import "jquery-ui/themes/base/theme.css";
@@ -29,7 +29,7 @@ import "datatables.net-fixedcolumns-jqui/css/fixedColumns.jqueryui.css";
 import "datatables.net-fixedheader-jqui/css/fixedHeader.jqueryui.css";
 import "datatables.net-responsive-jqui/css/responsive.jqueryui.css";
 
-import './parallel_coordinates/css/ParallelCoordinates.css';
+import '@PanDAWMS/invex-parallel-coordinates/ParallelCoordinates.css';
 
 ///////
 //import "mark.js";
@@ -37,22 +37,13 @@ import './parallel_coordinates/css/ParallelCoordinates.css';
 //import('./parallel_coordinates/js/dataTables.alphabetSearch.js');
 //import './parallel_coordinates/css/dataTables.alphabetSearch.css';
 
-
 export class parcoordsComponent extends React.Component {
     constructor() {
         super();
         uniqueId.enableUniqueIds(this);
     }
 
-    /*onClick = () => {
-        this.props.vis.params.counter++;
-        this.props.vis.updateState();
-    };*/
-
     render() {
-        //console.log(this);
-
-        //let visData = this.props.visData;
         this._id = "ParallelCoordinatesGraph-" + this.nextUniqueId();
 
         return (
@@ -63,8 +54,7 @@ export class parcoordsComponent extends React.Component {
     }
 
     updatePC() {
-        console.log(this);
-
+        //console.log('components_update', this);
 
         let vd = this.props.visData,
             dims = vd.columns.map(col => col.name),
@@ -77,7 +67,6 @@ export class parcoordsComponent extends React.Component {
         options.skip.dims.mode = 'show';
         options.skip.dims.values = this.props.vis.params.selected_options.map(x => x.label);
 
-        // todo: set default clustering the last bucket
         if (this._coords === null)
             this._coords = new ParallelCoordinates(this._id, dims, data, colors, color_scheme, options);
         else this._coords.updateData(this._id, dims, data, colors, color_scheme, options);
