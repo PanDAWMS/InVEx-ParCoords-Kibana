@@ -1,41 +1,6 @@
 import React from 'react';
-
-import "d3";
-import "jquery";
-import "jquery-ui";
-
-import "datatables.net";
-import "datatables.net-jqui";
-import "datatables.net-buttons-jqui";
-import "datatables.net-buttons/js/buttons.colVis.js";
-import "datatables.net-colreorder-jqui";
-import "datatables.net-fixedcolumns-jqui";
-import "datatables.net-fixedheader-jqui";
-import "datatables.net-responsive-jqui";
-
-import "select2";
-import "js-cookie";
-import "simple-statistics";
 import uniqueId from 'react-html-id';
-
 import ParallelCoordinates from '@PanDAWMS/invex-parallel-coordinates';
-
-import "select2/dist/css/select2.css";
-import "jquery-ui/themes/base/theme.css";
-import "datatables.net-jqui/css/dataTables.jqueryui.css";
-import "datatables.net-buttons-jqui/css/buttons.jqueryui.css";
-import "datatables.net-colreorder-jqui/css/colReorder.jqueryui.css";
-import "datatables.net-fixedcolumns-jqui/css/fixedColumns.jqueryui.css";
-import "datatables.net-fixedheader-jqui/css/fixedHeader.jqueryui.css";
-import "datatables.net-responsive-jqui/css/responsive.jqueryui.css";
-
-import '@PanDAWMS/invex-parallel-coordinates/ParallelCoordinates.css';
-
-///////
-//import "mark.js";
-//import "datatables.mark.js";
-//import('./parallel_coordinates/js/dataTables.alphabetSearch.js');
-//import './parallel_coordinates/css/dataTables.alphabetSearch.css';
 
 export class parcoordsComponent extends React.Component {
     constructor() {
@@ -54,8 +19,6 @@ export class parcoordsComponent extends React.Component {
     }
 
     updatePC() {
-        //console.log('components_update', this);
-
         let vd = this.props.visData,
             dims = vd.columns.map(col => col.name),
             data = vd.rows.map(row => vd.columns.map(col => row[col.id])),
