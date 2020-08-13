@@ -14,10 +14,12 @@ export class parcoordsEditor extends React.Component {
     onToggleChange = (e, component) => {
         let _pc = this.props.stateParams.parcoords_params;
 
+        console.log('toggle', e, component);
+
         switch (component) {
             case 'colors':
                 this.props.setValue('colors', !this.props.stateParams.colors);
-                return;
+                break;
             case 'debug':
                 _pc.debug = !_pc.debug;
                 break;
@@ -45,19 +47,28 @@ export class parcoordsEditor extends React.Component {
     render() {
         //console.log('editor_render', this);
 
-        let features = this.props.aggsLabels.split(','),
-            lastBucket = '';
-        this._selected_features = this.props.stateParams.selected_options;
-        this._color_feature =  this.props.stateParams.color_feature;
+        let features = [],
+            lastBucket = '',
+            params = this.props.stateParams;
+        this._selected_features = (params.hasOwnProperty('selected_options')) ? params.selected_options : undefined;
+        this._color_feature = (params.hasOwnProperty('color_feature')) ? params.color_feature : undefined;
 
-        if (features.length === 0 || features[0] === '') return null;
+        //if (features.length === 0 || features[0] === '') return null;
 
-        for(let i = this.props.aggs.aggs.length - 1; i > 0 && lastBucket === ''; i--)
+        for(let i = this.props.aggs.aggs.length - 1; i >= 0; i--)
         {
             let x = this.props.aggs.aggs[i];
             if (!x.enabled || !x.hasOwnProperty('__type')) continue;
-            if (x.__type.type === "buckets" && x.params.field !== undefined)
-                lastBucket = x.params.field.displayName;
+
+            if (x.__type !== undefined){
+                let name = (x.hasOwnProperty('params') && x.params.hasOwnProperty('customLabel')) ?
+                    x.params.customLabel :
+                    x.getFieldDisplayName();
+                if (name === '') name = x.__type.title;
+
+                features.push(name);
+                if(x.__type.type === 'buckets') lastBucket = name;
+            }
         }
 
         this._box_options = features.map(x => {return { label: x }});
@@ -89,9 +100,21 @@ export class parcoordsEditor extends React.Component {
             this.props.setValue('color_feature', this._color_feature);
         }
 
-        return (
-            <div className="eEditorMenu">
-                <EuiPanel>
+        let selectedComboBox = (this._selected_features.length !== 0) ?
+          <EuiComboBox options={this._box_options} isClearable={false}
+                            selectedOptions={this._selected_features} onChange={this.onFeatureListChange} />
+          :
+          <EuiComboBox options={this._box_options} isClearable={false} onChange={this.onFeatureListChange}/>,
+
+          colorComboBox = <EuiComboBox placeholder="Select a single option"
+                                       singleSelection={{ asPlainText: true }}
+                                       onChange={this.onColorChange}
+                                       options={this._box_options}
+                                       selectedOptions={this._color_feature}
+                                       isClearable={false}/>;
+
+         /*
+         <EuiPanel>
                     <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
                         <EuiFlexItem grow={false}>
                             <EuiTitle size="xs">
@@ -116,7 +139,6 @@ export class parcoordsEditor extends React.Component {
                         isSelected={this._visible.table}
                         size="s"
                         isEmpty
-                        //isIconOnly
                     />
 
                     <EuiSpacer size="xs"/>
@@ -128,7 +150,6 @@ export class parcoordsEditor extends React.Component {
                         isSelected={this._visible.hint}
                         size="s"
                         isEmpty
-                        //isIconOnly
                     />
 
                     <EuiSpacer size="xs"/>
@@ -140,7 +161,6 @@ export class parcoordsEditor extends React.Component {
                         isSelected={this._visible.selector}
                         size="s"
                         isEmpty
-                        //isIconOnly
                     />
 
                     <EuiSpacer size="xs"/>
@@ -152,7 +172,6 @@ export class parcoordsEditor extends React.Component {
                         isSelected={this._visible.table_colvis}
                         size="s"
                         isEmpty
-                        //isIconOnly
                     />
 
                     <EuiSpacer size="xs"/>
@@ -164,56 +183,11 @@ export class parcoordsEditor extends React.Component {
                         isSelected={this._visible.cluster_table}
                         size="s"
                         isEmpty
-                        //isIconOnly
                     />
                 </EuiPanel>
 
-                <EuiSpacer size="s"/>
 
-                 <EuiPanel>
-                    <EuiTitle size="xs">
-                        <h3>Display options</h3>
-                    </EuiTitle>
-
-                    <EuiSpacer size="s"/>
-
-                     <EuiFormRow
-                        label="Visible features"
-                        helpText="Features to be displayed on the graph">
-                        <EuiComboBox
-                            options={this._box_options}
-                            selectedOptions={this._selected_features}
-                            isClearable={false}
-                            onChange={this.onFeatureListChange}
-                            //onCreateOption={this.onCreateOption}
-                        />
-                     </EuiFormRow>
-
-                    <EuiSpacer size="xs"/>
-
-                    <EuiHorizontalRule size="half" />
-
-                    <EuiCheckbox
-                        id={"ColorCheckbox"}
-                        label="Add colors: "
-                        checked={this.props.stateParams.colors}
-                        onChange={(e) => this.onToggleChange(e, 'colors')}
-                    />
-
-                    <EuiComboBox
-                        placeholder="Select a single option"
-                        singleSelection={{ asPlainText: true }}
-                        options={this._box_options}
-                        selectedOptions={this._color_feature}
-                        onChange={this.onColorChange}
-                        isClearable={false}
-                    />
-
-                </EuiPanel>
-
-                <EuiSpacer size="s"/>
-
-                <EuiPanel>
+          <EuiPanel>
                     <EuiTitle size="xs">
                         <h3>Additional settings</h3>
                     </EuiTitle>
@@ -227,6 +201,46 @@ export class parcoordsEditor extends React.Component {
                         onChange={(e) => this.onToggleChange(e, 'debug')}
                     />
                 </EuiPanel>
+
+          */
+
+        return (
+            <div className="eEditorMenu">
+
+
+                <EuiSpacer size="s"/>
+
+                 <EuiPanel>
+                    <EuiTitle size="xs">
+                        <h3>Display options</h3>
+                    </EuiTitle>
+
+                    <EuiSpacer size="s"/>
+
+                     <EuiFormRow
+                        label="Visible features"
+                        helpText="Features to be displayed on the graph">
+                       {selectedComboBox}
+                     </EuiFormRow>
+
+                    <EuiSpacer size="xs"/>
+
+                    <EuiHorizontalRule size="half" />
+
+                    <EuiCheckbox
+                        id={"ColorCheckbox"}
+                        label="Add colors: "
+                        checked={this.props.stateParams.colors}
+                        onChange={(e) => this.onToggleChange(e, 'colors')}
+                    />
+
+                   {colorComboBox}
+
+                </EuiPanel>
+
+                <EuiSpacer size="s"/>
+
+
             </div>
         );
     }
